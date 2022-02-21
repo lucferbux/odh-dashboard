@@ -3,6 +3,7 @@ import { FastifyInstance, FastifyRequest } from 'fastify';
 import { KubeFastifyInstance, KubeStatus } from '../../../types';
 import { DEV_MODE } from '../../../utils/constants';
 import { addCORSHeader } from '../../../utils/responseUtils';
+import { V1RoleBinding, V1Subject } from '@kubernetes/client-node';
 
 const status = async (
   fastify: KubeFastifyInstance,
@@ -16,7 +17,26 @@ const status = async (
   if (!userName || userName === 'inClusterUser') {
     userName = 'kube:admin';
   }
-
+  const rbac = fastify.kube.rbac;
+  let isAdmin = false;
+  try {
+    const bindings = await rbac.listNamespacedRoleBinding('redhat-ods-applications');
+    const items = bindings.body.items;
+    items.map((roleBinding: V1RoleBinding) => {
+      if (roleBinding.roleRef.name === 'admin') {
+        roleBinding.subjects.find((subject: V1Subject) => {
+          if (subject.kind === 'User' && subject.name === userName) {
+            isAdmin = true;
+            return true;
+          }
+          return false;
+        });
+      }
+    });
+  } catch (e) {
+    console.log('Failed to get role bindings: ' + e.toString());
+  }
+  fastify.kube.coreV1Api.getAPIResources();
   if (!kubeContext && !kubeContext.trim()) {
     const error = createError(500, 'failed to get kube status');
     error.explicitInternalServerError = true;
@@ -34,6 +54,7 @@ const status = async (
         userName,
         clusterID,
         clusterBranding,
+        isAdmin,
       },
     });
   }
