@@ -9,6 +9,7 @@ const status = async (
   fastify: KubeFastifyInstance,
   request: FastifyRequest,
 ): Promise<{ kube: KubeStatus }> => {
+  const adminGroup = process.env.ADMIN_GROUP;
   const kubeContext = fastify.kube.currentContext;
   const { currentContext, namespace, currentUser, clusterID, clusterBranding } = fastify.kube;
   const currentUserName =
@@ -23,7 +24,7 @@ const status = async (
     const bindings = await rbac.listNamespacedRoleBinding('redhat-ods-applications');
     const items = bindings.body.items;
     items.map((roleBinding: V1RoleBinding) => {
-      if (roleBinding.roleRef.name === 'admin') {
+      if (roleBinding.roleRef.name === adminGroup) {
         roleBinding.subjects.find((subject: V1Subject) => {
           if (subject.kind === 'User' && subject.name === userName) {
             isAdmin = true;
