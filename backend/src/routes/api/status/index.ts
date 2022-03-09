@@ -3,7 +3,10 @@ import { FastifyInstance, FastifyRequest } from 'fastify';
 import { KubeFastifyInstance, KubeStatus } from '../../../types';
 import { DEV_MODE } from '../../../utils/constants';
 import { addCORSHeader } from '../../../utils/responseUtils';
-import { V1RoleBinding, V1Subject } from '@kubernetes/client-node';
+
+type groupObjResponse = {
+  users: string[];
+};
 
 const status = async (
   fastify: KubeFastifyInstance,
@@ -18,25 +21,22 @@ const status = async (
   if (!userName || userName === 'inClusterUser') {
     userName = 'kube:admin';
   }
-  const rbac = fastify.kube.rbac;
+  const customObjectsApi = fastify.kube.customObjectsApi;
   let isAdmin = false;
+
   try {
-    const bindings = await rbac.listNamespacedRoleBinding('redhat-ods-applications');
-    const items = bindings.body.items;
-    items.map((roleBinding: V1RoleBinding) => {
-      if (roleBinding.roleRef.name === adminGroup) {
-        roleBinding.subjects.find((subject: V1Subject) => {
-          if (subject.kind === 'User' && subject.name === userName) {
-            isAdmin = true;
-            return true;
-          }
-          return false;
-        });
-      }
-    });
+    const adminGroupResponse = await customObjectsApi.getClusterCustomObject(
+      'user.openshift.io',
+      'v1',
+      'groups',
+      adminGroup,
+    );
+    const adminUsers = (adminGroupResponse.body as groupObjResponse).users;
+    isAdmin = adminUsers.includes(userName);
   } catch (e) {
     console.log('Failed to get role bindings: ' + e.toString());
   }
+
   fastify.kube.coreV1Api.getAPIResources();
   if (!kubeContext && !kubeContext.trim()) {
     const error = createError(500, 'failed to get kube status');
