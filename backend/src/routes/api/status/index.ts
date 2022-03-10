@@ -37,7 +37,7 @@ const status = async (
     const adminUsers = (adminGroupResponse.body as groupObjResponse).users;
     isAdmin = adminUsers.includes(userName);
   } catch (e) {
-    console.log('Failed to get role bindings: ' + e.toString());
+    console.log('Failed to get groups: ' + e.toString());
   }
 
   fastify.kube.coreV1Api.getAPIResources();
