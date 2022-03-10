@@ -12,7 +12,6 @@ const status = async (
   fastify: KubeFastifyInstance,
   request: FastifyRequest,
 ): Promise<{ kube: KubeStatus }> => {
-  const adminGroup = process.env.ADMIN_GROUP;
   const kubeContext = fastify.kube.currentContext;
   const { currentContext, namespace, currentUser, clusterID, clusterBranding } = fastify.kube;
   const currentUserName =
@@ -22,7 +21,11 @@ const status = async (
     userName = 'kube:admin';
   }
   const customObjectsApi = fastify.kube.customObjectsApi;
+  const coreV1Api = fastify.kube.coreV1Api;
   let isAdmin = false;
+
+  const configGroupName = (await coreV1Api.readNamespacedConfigMap('groups-config', namespace)).body.data['groups-config'];
+  const adminGroup = (await coreV1Api.readNamespacedConfigMap(configGroupName, namespace)).body.data['admin_groups'];
 
   try {
     const adminGroupResponse = await customObjectsApi.getClusterCustomObject(
