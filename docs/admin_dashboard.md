@@ -21,7 +21,7 @@ data:
     groups-config: odh-groups-config
 ```
 
-2. Next, we should have another `ConfigMap`, this time with the same name as the value in **groups-config** (in our example would be odh-groups-config), with two values: **admin_groups** and **allowed_groups**. The value **admin_groups** will tell odh-dashboard the name of the current **group of admins**.
+2. Next, we should have another `ConfigMap`, this time with the same name as the value in **groups-config** (in our example would be odh-groups-config), with two values: **admin_groups** and **allowed_groups**. The value **admin_groups** will tell odh-dashboard the name of the current **group of admins**. This value could be **multiple groups** separated by commas. `admin_groups` will return an error either if the **value is empty** if the **value is** `system:authenticated` or if the groups don't exist.
 
 ```yaml
 apiVersion: v1
