@@ -8,6 +8,7 @@ import {
   getGroup,
   MissingGroupError,
 } from '../../../utils/groupsUtils';
+import { getUser } from '../../../utils/userUtils';
 
 const SYSTEM_AUTHENTICATED = 'system:authenticated';
 const DEFAULT_USERNAME = 'kube:admin';
@@ -18,15 +19,19 @@ export const status = async (
 ): Promise<{ kube: KubeStatus }> => {
   const kubeContext = fastify.kube.currentContext;
   const { currentContext, namespace, currentUser, clusterID, clusterBranding } = fastify.kube;
-  const currentUserName =
-    (request.headers['x-forwarded-user'] as string) || currentUser.username || currentUser.name;
-  let userName = currentUserName?.split('/')[0];
-  if (!userName || userName === 'inClusterUser') {
-    userName = DEFAULT_USERNAME;
-  }
   const customObjectsApi = fastify.kube.customObjectsApi;
   const coreV1Api = fastify.kube.coreV1Api;
   const rbacAuthorizationApi = fastify.kube.rbac;
+  let userName = DEFAULT_USERNAME;
+
+  try {
+    const userOauth = await getUser(request, customObjectsApi);
+    userName = userOauth.metadata.name;
+  } catch (e) {
+    fastify.log.error(`${e}. Getting the cluster info.`);
+    const userCluster = (currentUser.username || currentUser.name)?.split('/')[0];
+    userName = !userCluster || userCluster === 'inClusterUser' ? userName : userCluster;
+  }
 
   let isAdmin = false;
   let adminGroupsList: string[] = [];
