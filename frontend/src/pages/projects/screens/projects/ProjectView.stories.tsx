@@ -71,7 +71,7 @@ EditProject.play = async ({ canvasElement }) => {
 
   // get modal
   const body = within(canvasElement.ownerDocument.body);
-  const nameInput = body.getByRole('textbox', { name: /Name Resource name/i });
+  const nameInput = body.getByRole('textbox', { name: 'Name' });
   const updateButton = body.getByText('Update', { selector: 'button' });
 
   // test that you can not submit on empty
@@ -136,7 +136,7 @@ CreateProject.play = async ({ canvasElement }) => {
   const body = within(canvasElement.ownerDocument.body);
   body.getByLabelText('Name');
   const resourceNameInput = body.getAllByRole('textbox').at(1) as HTMLElement;
-  const nameInput = body.getByRole('textbox', { name: /Name Resource name/i });
+  const nameInput = body.getByRole('textbox', { name: 'Name' });
   const createButton = body.getByText('Create', { selector: 'button' });
 
   // test that empty input disables form
