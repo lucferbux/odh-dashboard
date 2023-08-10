@@ -18,6 +18,8 @@ type ManageProjectModalProps = {
   onClose: (newProjectName?: string) => void;
 };
 
+type Test = string  | undefined
+
 const ManageProjectModal: React.FC<ManageProjectModalProps> = ({
   editProjectData,
   onClose,
