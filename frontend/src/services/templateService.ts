@@ -1,8 +1,9 @@
 // TODO: Delete once we refactor Admin panel to support Passthrough API
 import axios from 'axios';
 import YAML from 'yaml';
-import { assembleServingRuntimeTemplate } from '~/api';
+import { assembleServingRuntimeTemplate, TemplateModel } from '~/api';
 import { ServingRuntimeKind, TemplateKind } from '~/k8sTypes';
+import { addTypesTok8sListedResources } from '~/utilities/addTypesTok8sListedResources';
 
 export const listTemplatesBackend = async (
   namespace?: string,
@@ -10,7 +11,9 @@ export const listTemplatesBackend = async (
 ): Promise<TemplateKind[]> =>
   axios
     .get(`/api/templates/${namespace}`, { params: { labelSelector } })
-    .then((response) => response.data.items)
+    .then(
+      (response) => addTypesTok8sListedResources<TemplateKind>(response.data, TemplateModel).items,
+    )
     .catch((e) => Promise.reject(e));
 
 const dryRunServingRuntimeForTemplateCreationBackend = (
