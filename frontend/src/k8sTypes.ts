@@ -729,3 +729,16 @@ export type DashboardConfigKind = K8sResourceCommon & {
     templateDisablement?: string[];
   };
 };
+
+/**
+ * In the SDK TResource extends from K8sResourceCommon, but both kind and apiVersion are mandatory, which is not right, use this until fixed.
+ */
+export declare type K8sResourceListResult<TResource extends Partial<K8sResourceCommon>> = {
+  apiVersion: string;
+  kind: string;
+  items: TResource[];
+  metadata: {
+    resourceVersion: string;
+    continue: string;
+  };
+};

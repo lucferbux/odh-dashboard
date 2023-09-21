@@ -1,3 +1,4 @@
+import { K8sResourceCommon } from '@openshift/dynamic-plugin-sdk-utils';
 import { addTypesToK8sListedResources } from '~/utilities/addTypesToK8sListedResources';
 
 const servingRuntimeTemplate = {
@@ -53,8 +54,8 @@ describe('addTypesToK8sListedResources', () => {
     const list = addTypesToK8sListedResources(servingRuntimeTemplate, templateWithKind);
     expect(list).not.toBe(servingRuntimeTemplate);
     expect(list.items).toHaveLength(servingRuntimeTemplate.items.length);
-    list.items.forEach((i) => {
-      expect(i.kind || " ").toBe('Template');
+    list.items.forEach((i: Partial<K8sResourceCommon>) => {
+      expect(i.kind).toBe('Template');
       expect(i.apiVersion).toBe('template.openshift.io/v1');
     });
   });
