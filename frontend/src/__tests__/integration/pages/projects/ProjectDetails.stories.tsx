@@ -12,7 +12,6 @@ import { mockK8sResourceList } from '~/__mocks__/mockK8sResourceList';
 import { mockNotebookK8sResource } from '~/__mocks__/mockNotebookK8sResource';
 import ProjectDetailsContextProvider from '~/pages/projects/ProjectDetailsContext';
 import { mockInferenceServiceK8sResource } from '~/__mocks__/mockInferenceServiceK8sResource';
-import { mockSecretK8sResource } from '~/__mocks__/mockSecretK8sResource';
 import {
   mockServingRuntimeK8sResource,
   mockServingRuntimeK8sResourceLegacy,
@@ -29,6 +28,7 @@ import { AreaContext } from '~/concepts/areas/AreaContext';
 import { mockDscStatus } from '~/__mocks__/mockDscStatus';
 import { StackComponent } from '~/concepts/areas';
 import { mockImageStreamK8sResource } from '~/__mocks__/mockImageStreamK8sResource';
+import { mockDataConnection } from '~/__mocks__/mockDataConnection';
 
 const handlers = (isEmpty: boolean): RestHandler<MockedRequest<DefaultBodyType>>[] => [
   rest.get(
@@ -125,7 +125,7 @@ const handlers = (isEmpty: boolean): RestHandler<MockedRequest<DefaultBodyType>>
       ),
   ),
   rest.get('/api/k8s/api/v1/namespaces/test-project/secrets', (req, res, ctx) =>
-    res(ctx.json(mockK8sResourceList(isEmpty ? [] : [mockSecretK8sResource({})]))),
+    res(ctx.json(mockK8sResourceList(isEmpty ? [] : [mockDataConnection({}).data]))),
   ),
   rest.get(
     'api/k8s/apis/serving.kserve.io/v1alpha1/namespaces/test-project/servingruntimes',
