@@ -1,12 +1,13 @@
 import * as React from 'react';
 import ManageInferenceServiceModal from '~/pages/modelServing/screens/projects/InferenceServiceModal/ManageInferenceServiceModal';
 import { Table } from '~/components/table';
-import { InferenceServiceKind, ServingRuntimeKind } from '~/k8sTypes';
+import { InferenceServiceKind, SecretKind, ServingRuntimeKind } from '~/k8sTypes';
 import { ProjectsContext } from '~/concepts/projects/ProjectsContext';
 import DashboardEmptyTableView from '~/concepts/dashboard/DashboardEmptyTableView';
 import { isModelMesh } from '~/pages/modelServing/utils';
 import ManageKServeModal from '~/pages/modelServing/screens/projects/kServeModal/ManageKServeModal';
 import ResourceTr from '~/components/ResourceTr';
+import { ModelServingContext } from '~/pages/modelServing/ModelServingContext';
 import InferenceServiceTableRow from './InferenceServiceTableRow';
 import { getGlobalInferenceServiceColumns, getProjectInferenceServiceColumns } from './data';
 import DeleteInferenceServiceModal from './DeleteInferenceServiceModal';
@@ -27,6 +28,7 @@ const InferenceServiceTable: React.FC<InferenceServiceTableProps> = ({
   toolbarContent,
 }) => {
   const { modelServingProjects: projects } = React.useContext(ProjectsContext);
+  const { filterTokens } = React.useContext(ModelServingContext);
   const [deleteInferenceService, setDeleteInferenceService] =
     React.useState<InferenceServiceKind>();
   const [editInferenceService, setEditInferenceService] = React.useState<InferenceServiceKind>();
@@ -100,6 +102,7 @@ const InferenceServiceTable: React.FC<InferenceServiceTableProps> = ({
               : undefined,
             secrets: [],
           },
+          secrets: filterTokens(editInferenceService?.metadata.name),
         }}
         onClose={(edited) => {
           if (edited) {
