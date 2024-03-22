@@ -6,7 +6,7 @@ const ModelRegistryEmpty: React.FC = () => {
   const a = useRegisteredModels();
   React.useEffect(() => {
     console.log('useRegisteredModels', a);
-  }, []);
+  }, [a]);
 
   return (
     <>

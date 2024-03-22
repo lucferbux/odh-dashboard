@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Alert, Bullseye } from '@patternfly/react-core';
 import { SupportedArea, conditionalArea } from '~/concepts/areas';
+import { MODEL_REGISTRY_DEFINITION_NAME } from '~/concepts/modelRegistry/const';
 import useModelRegistryAPIState, { ModelRegistryAPIState } from './useModelRegistryAPIState';
 import useModelRegistryAPIRoute from './useModelRegistryAPIRoute';
 import {
@@ -38,11 +39,11 @@ export const ModelRegistryContext = React.createContext<ModelRegistryContextType
   refreshAPIState: () => undefined,
 });
 
-export const ModelRegistryProvider = conditionalArea<ModelRegistryContextProviderProps>(
+export const ModelRegistryContextProvider = conditionalArea<ModelRegistryContextProviderProps>(
   SupportedArea.MODEL_REGISTRY,
   true,
 )(({ children, namespace }) => {
-  const crState = useModelRegistryNamespaceCR(namespace);
+  const crState = useModelRegistryNamespaceCR(namespace, MODEL_REGISTRY_DEFINITION_NAME); // TODO: dynamially change the model registry name
   const [modelRegistryNamespaceCR, crLoaded, crLoadError, refreshCR] = crState;
   const isCRReady = isModelRegistryAvailable(crState);
 
@@ -54,12 +55,11 @@ export const ModelRegistryProvider = conditionalArea<ModelRegistryContextProvide
 
   const [routeHost, routeLoaded, routeLoadError, refreshRoute] = useModelRegistryAPIRoute(
     isCRReady,
+    MODEL_REGISTRY_DEFINITION_NAME,
     namespace,
   );
 
-  // const hostPath = routeLoaded && routeHost ? routeHost : null;
-  // TODO dpanshug: We need to fetch the service for each model registry
-  const hostPath = 'http://model-registry-shared.apps.modelserving-ui.dev.datahub.redhat.com';
+  const hostPath = routeLoaded && routeHost ? routeHost : null;
 
   const [apiState, refreshAPIState] = useModelRegistryAPIState(hostPath);
 

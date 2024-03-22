@@ -10,8 +10,13 @@ import { FAST_POLL_INTERVAL } from '~/utilities/const';
 import { SupportedArea, useIsAreaAvailable } from '~/concepts/areas';
 
 type State = string | null;
-// TODO dpanshug: need to fetch service of the MR CR
-const useModelRegistryAPIRoute = (hasCR: boolean, namespace: string): FetchState<State> => {
+
+// TODO: Ask the model registry team to provide a route rather than a service!!
+const useModelRegistryAPIRoute = (
+  hasCR: boolean,
+  modelRegistryName: string,
+  namespace: string,
+): FetchState<State> => {
   const modelRegistryAreaAvailable = useIsAreaAvailable(SupportedArea.MODEL_REGISTRY).status;
   const callback = React.useCallback<FetchStateCallbackPromise<State>>(
     (opts) => {
@@ -24,8 +29,8 @@ const useModelRegistryAPIRoute = (hasCR: boolean, namespace: string): FetchState
         return Promise.reject(new NotReadyError('CR not created'));
       }
 
-      return getModelRegistryAPIRoute(namespace, opts)
-        .then((result: RouteKind) => `https://${result.spec.host}`)
+      return getModelRegistryAPIRoute(namespace, modelRegistryName, opts)
+        .then((result: RouteKind) => `http://${result.spec.host}`) // TODO: check why it's not working with https!!!
         .catch((e) => {
           if (e.statusObject?.code === 404) {
             // Not finding is okay, not an error
@@ -34,7 +39,7 @@ const useModelRegistryAPIRoute = (hasCR: boolean, namespace: string): FetchState
           throw e;
         });
     },
-    [hasCR, namespace, modelRegistryAreaAvailable],
+    [hasCR, modelRegistryName, namespace, modelRegistryAreaAvailable],
   );
 
   const state = useFetchState<State>(callback, null, {

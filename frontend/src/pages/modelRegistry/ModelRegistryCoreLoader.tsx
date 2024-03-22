@@ -1,10 +1,11 @@
 import * as React from 'react';
 import { Outlet } from 'react-router';
-import ModelServingContextProvider from '~/pages/modelServing/ModelServingContext';
+import { MODEL_REGISTRY_DEFAULT_NAMESPACE } from '~/concepts/modelRegistry/const';
+import { ModelRegistryContextProvider } from '~/concepts/modelRegistry/context/ModelRegistryContext';
 
 const ModelRegistryCoreLoader: React.FC = () => (
-  <ModelServingContextProvider>
+  <ModelRegistryContextProvider namespace={MODEL_REGISTRY_DEFAULT_NAMESPACE}>
     <Outlet />
-  </ModelServingContextProvider>
+  </ModelRegistryContextProvider>
 );
 export default ModelRegistryCoreLoader;

@@ -17,7 +17,7 @@ export const isModelRegistryCRStatusAvailable = (cr: ModelRegistryKind): boolean
 export const isModelRegistryAvailable = ([state, loaded]: FetchState<State>): boolean =>
   loaded && !!state && isModelRegistryCRStatusAvailable(state);
 
-export const useModelRegistryNamespaceCR = (namespace: string): FetchState<State> => {
+export const useModelRegistryNamespaceCR = (namespace: string, name: string): FetchState<State> => {
   const modelRegistryAreaAvailable = useIsAreaAvailable(SupportedArea.MODEL_REGISTRY).status;
 
   const callback = React.useCallback<FetchStateCallbackPromise<State>>(
@@ -27,7 +27,7 @@ export const useModelRegistryNamespaceCR = (namespace: string): FetchState<State
         return Promise.reject(new NotReadyError('Model registry not enabled'));
       }
 
-      return getModelRegistryCR(namespace, opts).catch((e) => {
+      return getModelRegistryCR(namespace, name, opts).catch((e) => {
         if (e.statusObject?.code === 404) {
           // Not finding is okay, not an error
           return null;
@@ -35,7 +35,7 @@ export const useModelRegistryNamespaceCR = (namespace: string): FetchState<State
         throw e;
       });
     },
-    [namespace, modelRegistryAreaAvailable],
+    [namespace, name, modelRegistryAreaAvailable],
   );
 
   const [isStarting, setIsStarting] = React.useState(false);
