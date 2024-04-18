@@ -31,6 +31,7 @@ import { logout } from './appUtils';
 import QuickStarts from './QuickStarts';
 
 import './App.scss';
+import { ModelRegistrySelectorContextProvider } from '~/concepts/modelRegistry/context/ModelRegistrySelectorContext';
 
 const App: React.FC = () => {
   const [notificationsOpen, setNotificationsOpen] = React.useState(false);
@@ -116,9 +117,11 @@ const App: React.FC = () => {
           >
             <ErrorBoundary>
               <ProjectsContextProvider>
-                <QuickStarts>
-                  <AppRoutes />
-                </QuickStarts>
+                <ModelRegistrySelectorContextProvider>
+                  <QuickStarts>
+                    <AppRoutes />
+                  </QuickStarts>
+                </ModelRegistrySelectorContextProvider>
               </ProjectsContextProvider>
               <ToastNotifications />
               <TelemetrySetup />

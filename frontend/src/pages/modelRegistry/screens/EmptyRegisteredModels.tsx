@@ -1,6 +1,8 @@
 import {
+  Button,
   EmptyState,
   EmptyStateBody,
+  EmptyStateFooter,
   EmptyStateHeader,
   EmptyStateIcon,
   EmptyStateVariant,
@@ -22,6 +24,18 @@ const EmptyRegisteredModels: React.FC<EmptyRegisteredModelsType> = ({ preferredM
       <br />
       registry or select a different one.
     </EmptyStateBody>
+    <EmptyStateFooter>
+      <Button
+        id="register-model-empty-button"
+        key="register-model-empty-button"
+        data-testid="register-model-empty-button"
+        aria-label="Register model"
+        onClick={() => undefined}
+      >
+        Register model
+      </Button>
+      ,
+    </EmptyStateFooter>
   </EmptyState>
 );
 
