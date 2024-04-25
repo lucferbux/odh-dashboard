@@ -19,6 +19,7 @@ import { DASHBOARD_MAIN_CONTAINER_ID } from '~/utilities/const';
 import useDetectUser from '~/utilities/useDetectUser';
 import ProjectsContextProvider from '~/concepts/projects/ProjectsContext';
 import useStorageClasses from '~/concepts/k8s/useStorageClasses';
+import { ModelRegistrySelectorContextProvider } from '~/concepts/modelRegistry/context/ModelRegistrySelectorContext';
 import AreaContextProvider from '~/concepts/areas/AreaContext';
 import Header from './Header';
 import AppRoutes from './AppRoutes';
@@ -31,7 +32,6 @@ import { logout } from './appUtils';
 import QuickStarts from './QuickStarts';
 
 import './App.scss';
-import { ModelRegistrySelectorContextProvider } from '~/concepts/modelRegistry/context/ModelRegistrySelectorContext';
 
 const App: React.FC = () => {
   const [notificationsOpen, setNotificationsOpen] = React.useState(false);
