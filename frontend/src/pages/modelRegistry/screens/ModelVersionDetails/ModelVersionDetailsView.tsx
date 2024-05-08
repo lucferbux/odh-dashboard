@@ -16,11 +16,15 @@ import { ModelRegistryContext } from '~/concepts/modelRegistry/context/ModelRegi
 
 type ModelVersionDetailsViewProps = {
   modelVersion: ModelVersion;
+  refresh: () => void;
 };
 
-const ModelVersionDetailsView: React.FC<ModelVersionDetailsViewProps> = ({ modelVersion: mv }) => {
+const ModelVersionDetailsView: React.FC<ModelVersionDetailsViewProps> = ({
+  modelVersion: mv,
+  refresh,
+}) => {
   const [modelArtifact] = useModelArtifactsByVersionId(mv.id);
-  const { apiState, refreshAPIState } = React.useContext(ModelRegistryContext);
+  const { apiState } = React.useContext(ModelRegistryContext);
 
   return (
     <Flex
@@ -42,7 +46,7 @@ const ModelVersionDetailsView: React.FC<ModelVersionDetailsViewProps> = ({ model
                   getPatchBodyForModelVersion(mv, { description: value }),
                   mv.id,
                 )
-                .then(refreshAPIState)
+                .then(refresh)
             }
           />
           <EditableLabelsDescriptionListGroup
@@ -58,7 +62,7 @@ const ModelVersionDetailsView: React.FC<ModelVersionDetailsViewProps> = ({ model
                   }),
                   mv.id,
                 )
-                .then(refreshAPIState)
+                .then(refresh)
             }
           />
           <ModelPropertiesDescriptionListGroup

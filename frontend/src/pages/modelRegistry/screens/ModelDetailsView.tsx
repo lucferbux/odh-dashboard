@@ -12,10 +12,11 @@ import { getLabels, getPatchBodyForRegisteredModel, mergeUpdatedLabels } from '.
 
 type ModelDetailsViewProps = {
   registeredModel: RegisteredModel;
+  refresh: () => void;
 };
 
-const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({ registeredModel: rm }) => {
-  const { apiState, refreshAPIState } = React.useContext(ModelRegistryContext);
+const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({ registeredModel: rm, refresh }) => {
+  const { apiState } = React.useContext(ModelRegistryContext);
   return (
     <Flex
       direction={{ default: 'column', md: 'row' }}
@@ -36,7 +37,7 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({ registeredModel: rm
                   getPatchBodyForRegisteredModel(rm, { description: value }),
                   rm.id,
                 )
-                .then(refreshAPIState)
+                .then(refresh)
             }
           />
           <EditableLabelsDescriptionListGroup
@@ -52,7 +53,7 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({ registeredModel: rm
                   }),
                   rm.id,
                 )
-                .then(refreshAPIState)
+                .then(refresh)
             }
           />
           <ModelPropertiesDescriptionListGroup
@@ -65,7 +66,7 @@ const ModelDetailsView: React.FC<ModelDetailsViewProps> = ({ registeredModel: rm
                   getPatchBodyForRegisteredModel(rm, { customProperties: editedProperties }),
                   rm.id,
                 )
-                .then(refreshAPIState)
+                .then(refresh)
             }
           />
         </DescriptionList>
