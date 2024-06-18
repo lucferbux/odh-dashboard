@@ -330,6 +330,7 @@ const ManageKServeModal: React.FC<ManageKServeModalProps> = ({
                 data={createDataInferenceService}
                 setData={setCreateDataInferenceService}
                 allowCreate={allowCreate}
+                publicRoute
               />
             </StackItem>
           )}
