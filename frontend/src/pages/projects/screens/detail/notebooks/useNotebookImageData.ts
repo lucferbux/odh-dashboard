@@ -24,59 +24,52 @@ export const getNotebookImageData = (
   }
 
   const [imageName, versionName] = imageTag;
-  const [lastImageSelectionName] =
+  const [lastImageSelectionName, lastImageSelectionTag] =
     notebook.metadata.annotations?.['notebooks.opendatahub.io/last-image-selection']?.split(':') ??
     [];
 
-  // Fallback for non internal registry clusters
-  const imageStream =
-    images.find((image) => image.metadata.name === imageName) ||
-    images.find((image) =>
-      image.spec.tags
-        ? image.spec.tags.find(
-            (version) =>
-              version.from?.name === container.image &&
-              image.metadata.name === lastImageSelectionName,
-          )
-        : false,
-    );
-
-  // if the image stream is not found, consider it deleted
-  if (!imageStream) {
-    // Get the image display name from the notebook metadata if we can't find the image stream. (this is a fallback and could still be undefined)
-    const imageDisplayName = notebook.metadata.annotations?.['opendatahub.io/image-display-name'];
-
-    return {
-      imageAvailability: NotebookImageAvailability.DELETED,
-      imageDisplayName,
-    };
-  }
-
-  const versions = imageStream.spec.tags || [];
-  const imageVersion = versions.find(
-    (version) => version.name === versionName || version.from?.name === container.image,
+  const notebookImageInternalRegistry = getNotebookImageInternalRegistry(
+    notebook,
+    images,
+    imageName,
+    versionName,
   );
-
-  // because the image stream was found, get its display name
-  const imageDisplayName = getImageStreamDisplayName(imageStream);
-
-  // if the image version is not found, consider the image stream deleted
-  if (!imageVersion) {
-    return {
-      imageAvailability: NotebookImageAvailability.DELETED,
-      imageDisplayName,
-    };
+  if (
+    notebookImageInternalRegistry &&
+    notebookImageInternalRegistry.imageAvailability !== NotebookImageAvailability.DELETED
+  ) {
+    return notebookImageInternalRegistry;
   }
-
-  // if the image stream exists and the image version exists, return the image data
+  const notebookImageNoInternalRegistry = getNotebookImageNoInternalRegistry(
+    notebook,
+    images,
+    lastImageSelectionName,
+    container.image,
+  );
+  if (
+    notebookImageNoInternalRegistry &&
+    notebookImageNoInternalRegistry.imageAvailability !== NotebookImageAvailability.DELETED
+  ) {
+    return notebookImageNoInternalRegistry;
+  }
+  const notebookImageNoInternalRegistryNoSHA = getNotebookImageNoInternalRegistryNoSHA(
+    notebook,
+    images,
+    lastImageSelectionTag,
+    container.image,
+  );
+  if (
+    notebookImageNoInternalRegistryNoSHA &&
+    notebookImageNoInternalRegistryNoSHA.imageAvailability !== NotebookImageAvailability.DELETED
+  ) {
+    return notebookImageNoInternalRegistryNoSHA;
+  }
   return {
-    imageStream,
-    imageVersion,
-    imageAvailability:
-      imageStream.metadata.labels?.['opendatahub.io/notebook-image'] === 'true'
-        ? NotebookImageAvailability.ENABLED
-        : NotebookImageAvailability.DISABLED,
-    imageDisplayName,
+    imageAvailability: NotebookImageAvailability.DELETED,
+    imageDisplayName:
+      notebookImageInternalRegistry?.imageDisplayName ||
+      notebookImageNoInternalRegistry?.imageDisplayName ||
+      notebookImageNoInternalRegistryNoSHA?.imageDisplayName,
   };
 };
 
@@ -96,6 +89,92 @@ const useNotebookImageData = (notebook?: NotebookKind): NotebookImageData => {
 
     return [data, true, undefined];
   }, [images, notebook, loaded, loadError]);
+};
+
+const getNotebookImageInternalRegistry = (
+  notebook: NotebookKind,
+  images: ImageStreamKind[],
+  imageName: string,
+  versionName: string,
+): NotebookImageData[0] => {
+  const imageStream = images.find((image) => image.metadata.name === imageName);
+
+  return getImageDisplayName(imageStream, notebook, versionName);
+};
+
+const getNotebookImageNoInternalRegistry = (
+  notebook: NotebookKind,
+  images: ImageStreamKind[],
+  lastImageSelectionName: string,
+  containerImage: string,
+): NotebookImageData[0] => {
+  const imageStream = images.find(
+    (image) =>
+      image.metadata.name === lastImageSelectionName &&
+      image.spec.tags?.find((version) => version.from?.name === containerImage),
+  );
+
+  return getImageDisplayName(imageStream, notebook, containerImage);
+};
+
+const getNotebookImageNoInternalRegistryNoSHA = (
+  notebook: NotebookKind,
+  images: ImageStreamKind[],
+  lastImageSelectionTag: string,
+  containerImage: string,
+): NotebookImageData[0] => {
+  const imageStream = images.find((image) =>
+    image.status?.tags?.find(
+      (version) =>
+        version.tag === lastImageSelectionTag &&
+        version.items?.find((item) => item.dockerImageReference === containerImage),
+    ),
+  );
+
+  return getImageDisplayName(imageStream, notebook, lastImageSelectionTag);
+};
+
+const getImageDisplayName = (
+  imageStream: ImageStreamKind | undefined,
+  notebook: NotebookKind,
+  versionName: string,
+): NotebookImageData[0] => {
+  if (!imageStream) {
+    // Get the image display name from the notebook metadata if we can't find the image stream. (this is a fallback and could still be undefined)
+    const imageDisplayName = notebook.metadata.annotations?.['opendatahub.io/image-display-name'];
+
+    return {
+      imageAvailability: NotebookImageAvailability.DELETED,
+      imageDisplayName,
+    };
+  }
+  const versions = imageStream.spec.tags || [];
+  const imageVersion = versions.find((version) => version.name === versionName);
+  const imageDisplayName = getImageStreamDisplayName(imageStream);
+  if (!imageVersion) {
+    return {
+      imageAvailability: NotebookImageAvailability.DELETED,
+      imageDisplayName,
+    };
+  }
+
+  return returnImageData(imageStream, imageVersion, imageDisplayName);
+};
+
+const returnImageData = (
+  imageStream: ImageStreamKind,
+  imageVersion: any,
+  imageDisplayName: string,
+): NotebookImageData[0] => {
+  return {
+    imageStream,
+    imageVersion,
+    imageAvailability:
+      imageStream.metadata.labels?.['opendatahub.io/notebook-image'] === 'true'
+        ? NotebookImageAvailability.ENABLED
+        : NotebookImageAvailability.DISABLED,
+    imageDisplayName,
+  };
 };
 
 export default useNotebookImageData;

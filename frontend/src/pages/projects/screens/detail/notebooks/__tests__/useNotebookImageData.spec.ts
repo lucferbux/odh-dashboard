@@ -106,4 +106,21 @@ describe('getNotebookImageData', () => {
     const result = getNotebookImageData(notebook, images);
     expect(result?.imageAvailability).toBe(NotebookImageAvailability.DELETED);
   });
+
+  it('should fail when custom image shows unexpected Deleted flag', () => {
+    const imageName = 'jupyter-datascience-notebook';
+    const tagName = '2024.1';
+    const notebook = mockNotebookK8sResource({
+      lastImageSelection: `${imageName}:${tagName}`,
+      image: `quay.io/opendatahub/${imageName}:${tagName}`,
+    });
+    const images = [
+      mockImageStreamK8sResource({
+        tagName,
+        name: imageName,
+      }),
+    ];
+    const result = getNotebookImageData(notebook, images);
+    expect(result?.imageAvailability).toBe(NotebookImageAvailability.ENABLED);
+  });
 });
