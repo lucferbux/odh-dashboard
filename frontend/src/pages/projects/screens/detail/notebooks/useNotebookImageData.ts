@@ -99,7 +99,25 @@ const getNotebookImageInternalRegistry = (
 ): NotebookImageData[0] => {
   const imageStream = images.find((image) => image.metadata.name === imageName);
 
-  return getImageDisplayName(imageStream, notebook, versionName);
+  if (!imageStream) {
+    // Get the image display name from the notebook metadata if we can't find the image stream. (this is a fallback and could still be undefined)
+    return getDeletedImageData(
+      notebook.metadata.annotations?.['opendatahub.io/image-display-name'],
+    );
+  }
+
+  const versions = imageStream.spec.tags || [];
+  const imageVersion = versions.find((version) => version.name === versionName);
+  const imageDisplayName = getImageStreamDisplayName(imageStream);
+  if (!imageVersion) {
+    return getDeletedImageData(imageDisplayName);
+  }
+  return {
+    imageStream,
+    imageVersion,
+    imageAvailability: getImageAvailability(imageStream),
+    imageDisplayName,
+  };
 };
 
 const getNotebookImageNoInternalRegistry = (
@@ -114,7 +132,25 @@ const getNotebookImageNoInternalRegistry = (
       image.spec.tags?.find((version) => version.from?.name === containerImage),
   );
 
-  return getImageDisplayName(imageStream, notebook, containerImage);
+  if (!imageStream) {
+    // Get the image display name from the notebook metadata if we can't find the image stream. (this is a fallback and could still be undefined)
+    return getDeletedImageData(
+      notebook.metadata.annotations?.['opendatahub.io/image-display-name'],
+    );
+  }
+
+  const versions = imageStream.spec.tags || [];
+  const imageVersion = versions.find((version) => version.from?.name === containerImage);
+  const imageDisplayName = getImageStreamDisplayName(imageStream);
+  if (!imageVersion) {
+    return getDeletedImageData(imageDisplayName);
+  }
+  return {
+    imageStream,
+    imageVersion,
+    imageAvailability: getImageAvailability(imageStream),
+    imageDisplayName,
+  };
 };
 
 const getNotebookImageNoInternalRegistryNoSHA = (
@@ -131,50 +167,37 @@ const getNotebookImageNoInternalRegistryNoSHA = (
     ),
   );
 
-  return getImageDisplayName(imageStream, notebook, lastImageSelectionTag);
-};
-
-const getImageDisplayName = (
-  imageStream: ImageStreamKind | undefined,
-  notebook: NotebookKind,
-  versionName: string,
-): NotebookImageData[0] => {
   if (!imageStream) {
     // Get the image display name from the notebook metadata if we can't find the image stream. (this is a fallback and could still be undefined)
-    const imageDisplayName = notebook.metadata.annotations?.['opendatahub.io/image-display-name'];
-
-    return {
-      imageAvailability: NotebookImageAvailability.DELETED,
-      imageDisplayName,
-    };
+    return getDeletedImageData(
+      notebook.metadata.annotations?.['opendatahub.io/image-display-name'],
+    );
   }
+
   const versions = imageStream.spec.tags || [];
-  const imageVersion = versions.find((version) => version.name === versionName);
+  const imageVersion = versions.find((version) => version.name === lastImageSelectionTag);
   const imageDisplayName = getImageStreamDisplayName(imageStream);
   if (!imageVersion) {
-    return {
-      imageAvailability: NotebookImageAvailability.DELETED,
-      imageDisplayName,
-    };
+    return getDeletedImageData(imageDisplayName);
   }
-
-  return returnImageData(imageStream, imageVersion, imageDisplayName);
-};
-
-const returnImageData = (
-  imageStream: ImageStreamKind,
-  imageVersion: any,
-  imageDisplayName: string,
-): NotebookImageData[0] => {
   return {
     imageStream,
     imageVersion,
-    imageAvailability:
-      imageStream.metadata.labels?.['opendatahub.io/notebook-image'] === 'true'
-        ? NotebookImageAvailability.ENABLED
-        : NotebookImageAvailability.DISABLED,
+    imageAvailability: getImageAvailability(imageStream),
     imageDisplayName,
   };
 };
+
+export const getImageAvailability = (imageStream: ImageStreamKind): NotebookImageAvailability =>
+  imageStream.metadata.labels?.['opendatahub.io/notebook-image'] === 'true'
+    ? NotebookImageAvailability.ENABLED
+    : NotebookImageAvailability.DISABLED;
+
+export const getDeletedImageData = (
+  imageDisplayName: string | undefined,
+): NotebookImageData[0] => ({
+  imageAvailability: NotebookImageAvailability.DELETED,
+  imageDisplayName,
+});
 
 export default useNotebookImageData;
