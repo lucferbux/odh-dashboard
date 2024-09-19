@@ -192,3 +192,11 @@ rules:
       - delete
     resources:
       - modelregistries
+  - apiGroups:
+      - serving.kserve.io
+    resources:
+      - inferenceservices
+    verbs:
+      - get
+      - list
+      - watch
