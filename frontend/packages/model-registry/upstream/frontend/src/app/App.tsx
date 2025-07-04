@@ -12,20 +12,16 @@ import {
   Stack,
   StackItem,
 } from '@patternfly/react-core';
-import {
-  ToastNotifications,
-  useSettings,
-  logout,
-  NavBar,
-  useModularArchContext,
-  DeploymentMode,
-  useNamespaceSelector,
-} from 'mod-arch-shared';
+import ToastNotifications from '~/shared/components/ToastNotifications';
+import { useSettings } from '~/shared/hooks/useSettings';
+import { isMUITheme, Theme, AUTH_HEADER, MOCK_AUTH, isStandalone } from '~/shared/utilities/const';
+import { logout } from '~/shared/utilities/appUtils';
+import { NamespaceSelectorContext } from '~/shared/context/NamespaceSelectorContext';
+import NavSidebar from './NavSidebar';
 import AppRoutes from './AppRoutes';
 import { AppContext } from './AppContext';
 import { ModelRegistrySelectorContextProvider } from './context/ModelRegistrySelectorContext';
-import 'mod-arch-shared/style/MUI-theme.scss';
-import AppNavSidebar from './AppNavSidebar';
+import NavBar from './NavBar';
 
 const App: React.FC = () => {
   const {
@@ -35,11 +31,27 @@ const App: React.FC = () => {
     loadError: configError,
   } = useSettings();
 
-  const { namespacesLoaded, namespacesLoadError, initializationError } = useNamespaceSelector();
+  const { namespacesLoaded, namespacesLoadError, initializationError } =
+    React.useContext(NamespaceSelectorContext);
 
   const username = userSettings?.userId;
-  const { deploymentMode } = useModularArchContext();
-  const isIntegrated = deploymentMode === DeploymentMode.Integrated;
+
+  React.useEffect(() => {
+    // Apply the theme based on the value of STYLE_THEME
+    if (isMUITheme()) {
+      document.documentElement.classList.add(Theme.MUI);
+    } else {
+      document.documentElement.classList.remove(Theme.MUI);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    if (MOCK_AUTH && username) {
+      localStorage.setItem(AUTH_HEADER, username);
+    } else {
+      localStorage.removeItem(AUTH_HEADER);
+    }
+  }, [username]);
 
   const contextValue = React.useMemo(
     () =>
@@ -101,7 +113,7 @@ const App: React.FC = () => {
       <Page
         mainContainerId="primary-app-container"
         masthead={
-          !isIntegrated ? (
+          isStandalone() ? (
             <NavBar
               username={username}
               onLogout={() => {
@@ -112,8 +124,8 @@ const App: React.FC = () => {
             ''
           )
         }
-        isManagedSidebar={!isIntegrated}
-        sidebar={!isIntegrated ? <AppNavSidebar /> : sidebar}
+        isManagedSidebar={isStandalone()}
+        sidebar={isStandalone() ? <NavSidebar /> : sidebar}
       >
         <ModelRegistrySelectorContextProvider>
           <AppRoutes />

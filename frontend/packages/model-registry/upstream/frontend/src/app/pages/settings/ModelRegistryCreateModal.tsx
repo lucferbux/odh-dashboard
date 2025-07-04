@@ -6,15 +6,16 @@ import {
   HelperText,
   HelperTextItem,
   TextInput,
-  Alert,
 } from '@patternfly/react-core';
 import { Modal } from '@patternfly/react-core/deprecated';
 import { useNavigate } from 'react-router';
-import { FormSection } from 'mod-arch-shared';
 import ModelRegistryCreateModalFooter from '~/app/pages/settings/ModelRegistryCreateModalFooter';
+import FormFieldset from '~/app/pages/modelRegistry/screens/components/FormFieldset';
+import FormSection from '~/shared/components/pf-overrides/FormSection';
+
 import ModelRegistryDatabasePassword from '~/app/pages/settings/ModelRegistryDatabasePassword';
 import K8sNameDescriptionField from '~/concepts/k8s/K8sNameDescriptionField/K8sNameDescriptionField';
-import ThemeAwareFormGroupWrapper from './components/ThemeAwareFormGroupWrapper';
+import { isMUITheme } from '~/shared/utilities/const';
 
 type CreateModalProps = {
   onClose: () => void;
@@ -34,6 +35,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
   const [username, setUsername] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [database, setDatabase] = React.useState('');
+  //   const [addSecureDB, setAddSecureDB] = React.useState(false);
   const [isHostTouched, setIsHostTouched] = React.useState(false);
   const [isPortTouched, setIsPortTouched] = React.useState(false);
   const [isUsernameTouched, setIsUsernameTouched] = React.useState(false);
@@ -44,7 +46,9 @@ const CreateModal: React.FC<CreateModalProps> = ({
   const navigate = useNavigate();
 
   const onBeforeClose = () => {
+    // setIsSubmitting(false);
     setError(undefined);
+
     setHost('');
     setPort('');
     setUsername('');
@@ -62,11 +66,17 @@ const CreateModal: React.FC<CreateModalProps> = ({
   const hasContent = (value: string): boolean => !!value.trim().length;
 
   const canSubmit = () =>
+    // TODO: implement once we have the endpoint
+    // !isSubmitting &&
+    // isValidK8sName(nameDesc.k8sName.value || translateDisplayNameForK8s(nameDesc.name))
+    // &&
     hasContent(host) &&
     hasContent(password) &&
     hasContent(port) &&
     hasContent(username) &&
     hasContent(database);
+  // &&
+  // (!addSecureDB || (secureDBInfo.isValid && !configSecretsError))
 
   const onSubmit = () => {
     navigate(`/model-registry-settings`);
@@ -82,6 +92,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
       value={host}
       onBlur={() => setIsHostTouched(true)}
       onChange={(_e, value) => setHost(value)}
+      validated={isHostTouched && !hasContent(host) ? 'error' : 'default'}
     />
   );
 
@@ -93,6 +104,20 @@ const CreateModal: React.FC<CreateModalProps> = ({
     </HelperText>
   );
 
+  const hostFormGroup = (
+    <>
+      <FormGroup
+        className={hostHelperText ? 'pf-m-error' : ''}
+        label="Host"
+        isRequired
+        fieldId="mr-host"
+      >
+        <FormFieldset component={hostInput} field="Host" />
+      </FormGroup>
+      {hostHelperText}
+    </>
+  );
+
   const portInput = (
     <TextInput
       isRequired
@@ -102,6 +127,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
       value={port}
       onBlur={() => setIsPortTouched(true)}
       onChange={(_e, value) => setPort(value)}
+      validated={isPortTouched && !hasContent(port) ? 'error' : 'default'}
     />
   );
 
@@ -113,6 +139,20 @@ const CreateModal: React.FC<CreateModalProps> = ({
     </HelperText>
   );
 
+  const portFormGroup = (
+    <>
+      <FormGroup
+        className={portHelperText ? 'pf-m-error' : ''}
+        label="Port"
+        isRequired
+        fieldId="mr-port"
+      >
+        <FormFieldset component={portInput} field="Port" />
+      </FormGroup>
+      {portHelperText}
+    </>
+  );
+
   const userNameInput = (
     <TextInput
       isRequired
@@ -122,6 +162,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
       value={username}
       onBlur={() => setIsUsernameTouched(true)}
       onChange={(_e, value) => setUsername(value)}
+      validated={isUsernameTouched && !hasContent(username) ? 'error' : 'default'}
     />
   );
 
@@ -133,6 +174,20 @@ const CreateModal: React.FC<CreateModalProps> = ({
     </HelperText>
   );
 
+  const usernameFormGroup = (
+    <>
+      <FormGroup
+        className={usernameHelperText ? 'pf-m-error' : ''}
+        label="Username"
+        isRequired
+        fieldId="mr-username"
+      >
+        <FormFieldset component={userNameInput} field="Host" />
+      </FormGroup>
+      {usernameHelperText}
+    </>
+  );
+
   const passwordInput = (
     <ModelRegistryDatabasePassword
       password={password || ''}
@@ -140,6 +195,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
       isPasswordTouched={isPasswordTouched}
       setIsPasswordTouched={setIsPasswordTouched}
       showPassword={showPassword}
+      //   editRegistry={mr}
     />
   );
 
@@ -151,6 +207,20 @@ const CreateModal: React.FC<CreateModalProps> = ({
     </HelperText>
   );
 
+  const passwordFormGroup = (
+    <>
+      <FormGroup
+        className={passwordHelperText ? 'pf-m-error' : ''}
+        label="Password"
+        isRequired
+        fieldId="mr-password"
+      >
+        <FormFieldset component={passwordInput} field="Password" />
+      </FormGroup>
+      {passwordHelperText}
+    </>
+  );
+
   const databaseInput = (
     <TextInput
       isRequired
@@ -160,6 +230,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
       value={database}
       onBlur={() => setIsDatabaseTouched(true)}
       onChange={(_e, value) => setDatabase(value)}
+      validated={isDatabaseTouched && !hasContent(database) ? 'error' : 'default'}
     />
   );
 
@@ -169,6 +240,20 @@ const CreateModal: React.FC<CreateModalProps> = ({
         Database cannot be empty
       </HelperTextItem>
     </HelperText>
+  );
+
+  const databaseFormGroup = (
+    <>
+      <FormGroup
+        className={databaseHelperText ? 'pf-m-error' : ''}
+        label="Database"
+        isRequired
+        fieldId="mr-database"
+      >
+        <FormFieldset component={databaseInput} field="Database" />
+      </FormGroup>
+      {databaseHelperText}
+    </>
   );
 
   return (
@@ -190,6 +275,7 @@ const CreateModal: React.FC<CreateModalProps> = ({
           onCancel={onBeforeClose}
           onSubmit={onSubmit}
           submitLabel="Create"
+          // isSubmitLoading={isSubmitting}
           isSubmitDisabled={!canSubmit()}
           error={error}
           alertTitle={`Error ${'creating'} model registry`}
@@ -206,59 +292,93 @@ const CreateModal: React.FC<CreateModalProps> = ({
           title="Connect to external MySQL database"
           description="This external database is where model data is stored."
         >
-          <ThemeAwareFormGroupWrapper
-            label="Host"
-            fieldId="mr-host"
-            isRequired
-            helperTextNode={hostHelperText}
-          >
-            {hostInput}
-          </ThemeAwareFormGroupWrapper>
-
-          <ThemeAwareFormGroupWrapper
-            label="Port"
-            fieldId="mr-port"
-            isRequired
-            helperTextNode={portHelperText}
-          >
-            {portInput}
-          </ThemeAwareFormGroupWrapper>
-
-          <ThemeAwareFormGroupWrapper
-            label="Username"
-            fieldId="mr-username"
-            isRequired
-            helperTextNode={usernameHelperText}
-          >
-            {userNameInput}
-          </ThemeAwareFormGroupWrapper>
-
-          <ThemeAwareFormGroupWrapper
-            label="Password"
-            fieldId="mr-password"
-            isRequired
-            helperTextNode={passwordHelperText}
-          >
-            {passwordInput}
-          </ThemeAwareFormGroupWrapper>
-
-          <ThemeAwareFormGroupWrapper
-            label="Database"
-            fieldId="mr-database"
-            isRequired
-            helperTextNode={databaseHelperText}
-          >
-            {databaseInput}
-          </ThemeAwareFormGroupWrapper>
-
-          {/* ... Optional TLS section ... */}
+          {isMUITheme() ? (
+            hostFormGroup
+          ) : (
+            <>
+              <FormGroup label="Host" isRequired fieldId="mr-host">
+                {hostInput}
+                {hostHelperText}
+              </FormGroup>
+            </>
+          )}
+          {isMUITheme() ? (
+            portFormGroup
+          ) : (
+            <>
+              <FormGroup label="Port" isRequired fieldId="mr-port">
+                {portInput}
+                {portHelperText}
+              </FormGroup>
+            </>
+          )}
+          {isMUITheme() ? (
+            usernameFormGroup
+          ) : (
+            <>
+              <FormGroup label="Username" isRequired fieldId="mr-username">
+                {userNameInput}
+                {usernameHelperText}
+              </FormGroup>
+            </>
+          )}
+          {isMUITheme() ? (
+            passwordFormGroup
+          ) : (
+            <>
+              <FormGroup label="Password" isRequired fieldId="mr-password">
+                {passwordInput}
+                {passwordHelperText}
+              </FormGroup>
+            </>
+          )}
+          {isMUITheme() ? (
+            databaseFormGroup
+          ) : (
+            <>
+              <FormGroup label="Database" isRequired fieldId="mr-database">
+                {databaseInput}
+                {databaseFormGroup}
+              </FormGroup>
+            </>
+          )}
+          {/* {secureDbEnabled && (
+            <>
+              <FormGroup>
+                <Checkbox
+                  label="Add CA certificate to secure database connection"
+                  isChecked={addSecureDB}
+                  onChange={(_e, value) => setAddSecureDB(value)}
+                  id="add-secure-db"
+                  data-testid="add-secure-db-mr-checkbox"
+                  name="add-secure-db"
+                />
+              </FormGroup>
+              {addSecureDB &&
+                (!configSecretsLoaded && !configSecretsError ? (
+                  <EmptyState icon={Spinner} />
+                ) : configSecretsLoaded ? (
+                  <CreateMRSecureDBSection
+                    secureDBInfo={secureDBInfo}
+                    modelRegistryNamespace={modelRegistryNamespace}
+                    k8sName={nameDesc.k8sName.value}
+                    existingCertConfigMaps={configSecrets.configMaps}
+                    existingCertSecrets={configSecrets.secrets}
+                    setSecureDBInfo={setSecureDBInfo}
+                  />
+                ) : (
+                  <Alert
+                    isInline
+                    variant="danger"
+                    title="Error fetching config maps and secrets"
+                    data-testid="error-fetching-resource-alert"
+                  >
+                    {configSecretsError?.message}
+                  </Alert>
+                ))}
+            </>
+          )} */}
         </FormSection>
-
-        {error && (
-          <FormGroup>
-            <Alert variant="danger" isInline title={error.message} data-testid="mr-error" />
-          </FormGroup>
-        )}
       </Form>
     </Modal>
   );

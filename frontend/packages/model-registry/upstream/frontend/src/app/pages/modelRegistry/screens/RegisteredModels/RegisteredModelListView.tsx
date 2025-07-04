@@ -1,19 +1,28 @@
 import * as React from 'react';
-import { ToolbarFilter, ToolbarGroup, ToolbarItem } from '@patternfly/react-core';
+import {
+  SearchInput,
+  TextInput,
+  ToolbarFilter,
+  ToolbarGroup,
+  ToolbarItem,
+} from '@patternfly/react-core';
 import { FilterIcon } from '@patternfly/react-icons';
 import { useNavigate } from 'react-router-dom';
-import { ProjectObjectType, typedEmptyImage, asEnumMember, SimpleSelect } from 'mod-arch-shared';
-import { SearchType } from 'mod-arch-shared/dist/components/DashboardSearchField';
 import { ModelVersion, RegisteredModel } from '~/app/types';
 import { ModelRegistrySelectorContext } from '~/app/context/ModelRegistrySelectorContext';
+import { SearchType } from '~/shared/components/DashboardSearchField';
+import { ProjectObjectType, typedEmptyImage } from '~/shared/components/design/utils';
+import SimpleSelect from '~/shared/components/SimpleSelect';
 import {
   registeredModelArchiveUrl,
   registerModelUrl,
 } from '~/app/pages/modelRegistry/screens/routeUtils';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
+import FormFieldset from '~/app/pages/modelRegistry/screens/components/FormFieldset';
+import { isMUITheme } from '~/shared/utilities/const';
 import { filterRegisteredModels } from '~/app/pages/modelRegistry/screens/utils';
+import { asEnumMember } from '~/shared/utilities/utils';
 import { filterArchiveModels, filterLiveModels } from '~/app/utils';
-import ThemeAwareSearchInput from '~/app/pages/modelRegistry/screens/components/ThemeAwareSearchInput';
 import RegisteredModelTable from './RegisteredModelTable';
 import RegisteredModelsTableToolbar from './RegisteredModelsTableToolbar';
 
@@ -89,7 +98,6 @@ const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
             label: key,
           }))}
           value={searchType}
-          toggleProps={{ style: { minWidth: '150px' } }}
           onChange={(newSearchType) => {
             const newSearchTypeInput = asEnumMember(newSearchType, SearchType);
             if (newSearchTypeInput !== null) {
@@ -100,16 +108,35 @@ const RegisteredModelListView: React.FC<RegisteredModelListViewProps> = ({
         />
       </ToolbarFilter>
       <ToolbarItem>
-        <ThemeAwareSearchInput
-          value={search}
-          onChange={setSearch}
-          onClear={resetFilters}
-          placeholder={`Find by ${searchType.toLowerCase()}`}
-          fieldLabel={`Find by ${searchType.toLowerCase()}`}
-          className="toolbar-fieldset-wrapper"
-          style={{ minWidth: '200px' }}
-          data-testid="registered-model-table-search"
-        />
+        {isMUITheme() ? (
+          <FormFieldset
+            className="toolbar-fieldset-wrapper"
+            component={
+              <TextInput
+                value={search}
+                type="text"
+                onChange={(_, searchValue) => {
+                  setSearch(searchValue);
+                }}
+                style={{ minWidth: '200px' }}
+                data-testid="registered-model-table-search"
+                aria-label="Search"
+              />
+            }
+            field={`Find by ${searchType.toLowerCase()}`}
+          />
+        ) : (
+          <SearchInput
+            placeholder={`Find by ${searchType.toLowerCase()}`}
+            value={search}
+            onChange={(_, searchValue) => {
+              setSearch(searchValue);
+            }}
+            onClear={resetFilters}
+            style={{ minWidth: '200px' }}
+            data-testid="registered-model-table-search"
+          />
+        )}
       </ToolbarItem>
     </ToolbarGroup>
   );

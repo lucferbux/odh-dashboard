@@ -12,8 +12,10 @@ import {
   Truncate,
 } from '@patternfly/react-core';
 import { CheckIcon, ExternalLinkAltIcon, TimesIcon } from '@patternfly/react-icons';
-import { KeyValuePair, EitherNotBoth } from 'mod-arch-shared';
+import { KeyValuePair } from '~/shared/types';
+import { EitherNotBoth } from '~/shared/typeHelpers';
 import FormFieldset from '~/app/pages/modelRegistry/screens/components/FormFieldset';
+import { isMUITheme } from '~/shared/utilities/const';
 import { isValidHttpUrl } from './utils';
 
 type ModelPropertiesTableRowProps = {
@@ -45,7 +47,6 @@ const ModelPropertiesTableRow: React.FC<ModelPropertiesTableRowProps> = ({
   saveEditedProperty,
 }) => {
   const { key, value } = keyValuePair;
-
   const [unsavedKey, setUnsavedKey] = React.useState(key);
   const [unsavedValue, setUnsavedValue] = React.useState(value);
 
@@ -127,7 +128,11 @@ const ModelPropertiesTableRow: React.FC<ModelPropertiesTableRowProps> = ({
       <Td dataLabel="Key" width={45} modifier="breakWord">
         {isEditing ? (
           <>
-            <FormFieldset className="tr-fieldset-wrapper" component={propertyKeyInput} />
+            {isMUITheme() ? (
+              <FormFieldset className="tr-fieldset-wrapper" component={propertyKeyInput} />
+            ) : (
+              propertyKeyInput
+            )}
 
             {keyValidationError && (
               <FormHelperText>
@@ -143,7 +148,11 @@ const ModelPropertiesTableRow: React.FC<ModelPropertiesTableRowProps> = ({
       </Td>
       <Td dataLabel="Value" width={45} modifier="breakWord">
         {isEditing ? (
-          <FormFieldset className="tr-fieldset-wrapper" component={propertyValueInput} />
+          isMUITheme() ? (
+            <FormFieldset className="tr-fieldset-wrapper" component={propertyValueInput} />
+          ) : (
+            propertyValueInput
+          )
         ) : (
           <ExpandableSection
             variant="truncate"

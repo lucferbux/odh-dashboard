@@ -1,7 +1,8 @@
 [frontend requirements]: ./frontend/docs/dev-setup.md#requirements
 [BFF requirements]: ./bff/README.md#pre-requisites
+[frontend dev setup]: ./frontend/docs/dev-setup.md#development
+[BFF dev setup]: ./bff/README.md#development
 [Model registry UI]: ./docs/README.md
-[contributing guidelines]: ./CONTRIBUTING.md
 
 # Model Registry UI
 
@@ -9,9 +10,30 @@
 
 The Model Registry UI is a standalone web app for Kubeflow Model Registry. In this repository, you will find the frontend and backend for the Model Registry UI.
 
-## Contributing
+## Prerequisites
 
-You can check the [contributing guidelines] for more information on how to contribute to the Model Registry UI.
+* [Frontend requirements]
+* [BFF requirements]
+
+## Set Up
+
+### Development
+
+To run the a mocked dev environment you can either:
+
+* Use the makefile command to install dependencies `make dev-install-dependencies` and then start the dev environment `make dev-start`.
+
+* Or follow the [frontend dev setup] and [BFF dev setup].
+
+### Kubernetes Deployment
+
+For a in-depth guide on how to deploy the Model Registry UI, please refer to the [local kubernetes deployment](./bff/docs/local-development-guide.md) documentation.
+
+To quickly enable the Model Registry UI in your Kind cluster, you can use the following command:
+
+```shell
+make kind-deployment
+```
 
 ## OpenAPI Specification
 
@@ -40,20 +62,26 @@ The following environment variables are used to configure the deployment and dev
 ### `IMG_UI`
 
 * **Description**: Specifies the image name and tag for the UI (with BFF).
-* **Default Value**: `ghcr.io/kubeflow/model-registry/ui:latest`
-* **Example**: `IMG_UI=ghcr.io/kubeflow/model-registry/ui:latest`
+* **Default Value**: `model-registry-ui:latest`
+* **Example**: `IMG_UI=model-registry-bff:latest`
 
 ### `IMG_UI_STANDALONE`
 
 * **Description**: Specifies the image name and tag for the UI (with BFF) in **standalone mode**, used for local kind deployment.
-* **Default Value**: `ghcr.io/kubeflow/model-registry/ui-standalone:latest`
-* **Example**: `IMG_UI_STANDALONE=ghcr.io/kubeflow/model-registry/ui-standalone:latest`
+* **Default Value**: `model-registry-ui-standalone:latest`
+* **Example**: `IMG_UI_STANDALONE=model-registry-bff:latest`
 
 ### `PLATFORM`
 
 * **Description**: Specifies the platform for a **docker buildx** build.
 * **Default Value**: `linux/amd64`
 * **Example**: `PLATFORM=linux/amd64`
+
+### `MOCK_AUTH`
+
+* **Description**: Specifies whether to mock authentication in the UI.
+* **Default Value**: `true` (in dev mode) / `false` (in production mode)
+* **Possible Values**: `true`, `false`
 
 ### `DEPLOYMENT_MODE`
 

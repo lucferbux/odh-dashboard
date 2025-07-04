@@ -1,4 +1,4 @@
-import { UserSettings } from 'mod-arch-shared';
+import { UserSettings } from '~/shared/types';
 
 type MockUserSettingsType = {
   userId?: string;

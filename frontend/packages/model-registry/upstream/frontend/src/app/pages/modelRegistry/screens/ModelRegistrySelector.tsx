@@ -16,16 +16,13 @@ import {
 import text from '@patternfly/react-styles/css/utilities/Text/text';
 import truncateStyles from '@patternfly/react-styles/css/components/Truncate/truncate';
 import { InfoCircleIcon, BlueprintIcon } from '@patternfly/react-icons';
-import {
-  useBrowserStorage,
-  WhosMyAdministrator,
-  KubeflowDocs,
-  useThemeContext,
-  SimpleSelect,
-} from 'mod-arch-shared';
-import { SimpleSelectOption } from 'mod-arch-shared/dist/components/SimpleSelect';
+import { useBrowserStorage } from '~/shared/components/browserStorage';
 import { ModelRegistrySelectorContext } from '~/app/context/ModelRegistrySelectorContext';
 import { ModelRegistry } from '~/app/types';
+import SimpleSelect, { SimpleSelectOption } from '~/shared/components/SimpleSelect';
+import WhosMyAdministrator from '~/shared/components/WhosMyAdministrator';
+import { isMUITheme } from '~/shared/utilities/const';
+import KubeflowDocs from '~/shared/components/KubeflowDocs';
 
 const MODEL_REGISTRY_FAVORITE_STORAGE_KEY = 'kubeflow.dashboard.model.registry.favorite';
 
@@ -45,7 +42,6 @@ const ModelRegistrySelector: React.FC<ModelRegistrySelectorProps> = ({
   const { modelRegistries, updatePreferredModelRegistry } = React.useContext(
     ModelRegistrySelectorContext,
   );
-  const { isMUITheme } = useThemeContext();
 
   const selection = modelRegistries.find((mr) => mr.name === modelRegistry);
   const [favorites, setFavorites] = useBrowserStorage<string[]>(
@@ -179,7 +175,7 @@ const ModelRegistrySelector: React.FC<ModelRegistrySelectorProps> = ({
         </FlexItem>
       )}
       <FlexItem align={{ default: 'alignRight' }}>
-        {isMUITheme ? (
+        {isMUITheme() ? (
           <KubeflowDocs
             buttonLabel="Need another registry?"
             linkTestId="model-registry-help-button"

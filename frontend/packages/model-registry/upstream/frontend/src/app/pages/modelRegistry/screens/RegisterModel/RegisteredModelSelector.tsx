@@ -1,9 +1,9 @@
 import React from 'react';
 import { FormGroup, TextInput } from '@patternfly/react-core';
-import { TypeaheadSelect } from 'mod-arch-shared';
-import { TypeaheadSelectOption } from 'mod-arch-shared/dist/components/TypeaheadSelect';
 import { RegisteredModel } from '~/app/types';
 import FormFieldset from '~/app/pages/modelRegistry/screens/components/FormFieldset';
+import { isMUITheme } from '~/shared/utilities/const';
+import TypeaheadSelect, { TypeaheadSelectOption } from '~/shared/components/TypeaheadSelect';
 
 type RegisteredModelSelectorProps = {
   registeredModels: RegisteredModel[];
@@ -48,7 +48,11 @@ const RegisteredModelSelector: React.FC<RegisteredModelSelectorProps> = ({
     */
     return (
       <FormGroup label="Model name" className="form-group-disabled" isRequired fieldId="model-name">
-        <FormFieldset component={modelNameInput} field="Model Name" />
+        {isMUITheme() ? (
+          <FormFieldset component={modelNameInput} field="Model Name" />
+        ) : (
+          modelNameInput
+        )}
       </FormGroup>
     );
   }

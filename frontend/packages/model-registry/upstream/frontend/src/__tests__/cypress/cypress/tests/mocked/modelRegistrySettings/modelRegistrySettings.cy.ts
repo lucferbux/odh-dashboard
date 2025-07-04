@@ -1,21 +1,21 @@
-import type { ModelRegistryKind } from 'mod-arch-shared';
-import { mockModelRegistryKind } from '~/__mocks__/mockModelRegistryKind';
+import { mockModelRegistry } from '~/__mocks__/mockModelRegistry';
+import type { ModelRegistry } from '~/app/types';
 import { modelRegistrySettings } from '~/__tests__/cypress/cypress/pages/modelRegistrySettings';
 
 type HandlersProps = {
-  modelRegistries?: ModelRegistryKind[];
+  modelRegistries?: ModelRegistry[];
 };
 
 const MODEL_REGISTRY_API_VERSION = 'v1';
 
 const initIntercepts = ({
   modelRegistries = [
-    mockModelRegistryKind({
+    mockModelRegistry({
       name: 'modelregistry-sample',
       description: 'New model registry',
       displayName: 'Model Registry Sample',
     }),
-    mockModelRegistryKind({
+    mockModelRegistry({
       name: 'modelregistry-sample-2',
       description: 'New model registry 2',
       displayName: 'Model Registry Sample 2',
@@ -23,7 +23,7 @@ const initIntercepts = ({
   ],
 }: HandlersProps) => {
   cy.interceptApi(
-    `GET /api/:apiVersion/settings/model_registry`,
+    `GET /api/:apiVersion/model_registry`,
     {
       path: { apiVersion: MODEL_REGISTRY_API_VERSION },
     },

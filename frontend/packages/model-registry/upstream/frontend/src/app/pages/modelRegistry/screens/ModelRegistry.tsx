@@ -1,8 +1,11 @@
 import React from 'react';
-import { Divider, Stack, StackItem } from '@patternfly/react-core';
-import { ProjectObjectType, ApplicationsPage, TitleWithIcon } from 'mod-arch-shared';
+import { Divider } from '@patternfly/react-core';
+import ApplicationsPage from '~/shared/components/ApplicationsPage';
 import useRegisteredModels from '~/app/hooks/useRegisteredModels';
 import useModelVersions from '~/app/hooks/useModelVersions';
+import { isMUITheme } from '~/shared/utilities/const';
+import TitleWithIcon from '~/shared/components/design/TitleWithIcon';
+import { ProjectObjectType } from '~/shared/components/design/utils';
 import ModelRegistrySelectorNavigator from './ModelRegistrySelectorNavigator';
 import RegisteredModelListView from './RegisteredModels/RegisteredModelListView';
 import { modelRegistryUrl } from './routeUtils';
@@ -34,19 +37,18 @@ const ModelRegistry: React.FC<ModelRegistryProps> = ({ ...pageProps }) => {
     <ApplicationsPage
       {...pageProps}
       title={
-        <TitleWithIcon title="Model Registry" objectType={ProjectObjectType.registeredModels} />
+        !isMUITheme() ? (
+          <TitleWithIcon title="Model Registry" objectType={ProjectObjectType.registeredModels} />
+        ) : (
+          'Model Registry'
+        )
       }
       description={
-        <Stack hasGutter>
-          <StackItem>
-            Select a model registry to view and manage your registered models. Model registries
-            provide a structured and organized way to store, share, version, deploy, and track
-            models.
-          </StackItem>
-          <StackItem>
-            <Divider />
-          </StackItem>
-        </Stack>
+        !isMUITheme() ? (
+          'Select a model registry to view and manage your registered models. Model registries provide a structured and organized way to store, share, version, deploy, and track models.'
+        ) : (
+          <Divider />
+        )
       }
       headerContent={
         <ModelRegistrySelectorNavigator

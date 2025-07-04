@@ -7,8 +7,8 @@ import {
   TextArea,
   TextInput,
 } from '@patternfly/react-core';
-import { useThemeContext } from 'mod-arch-shared';
 import ResourceNameDefinitionTooltip from '~/concepts/k8s/ResourceNameDefinitionTootip';
+import { isMUITheme } from '~/shared/utilities/const';
 import FormFieldset from '~/app/pages/modelRegistry/screens/components/FormFieldset';
 import ResourceNameField from './ResourceNameField';
 
@@ -55,7 +55,6 @@ const K8sNameDescriptionField: React.FC<K8sNameDescriptionFieldProps> = ({
   hideDescription,
 }) => {
   const [showK8sField, setShowK8sField] = React.useState(false);
-  const { isMUITheme } = useThemeContext();
 
   //   const { name, description, k8sName } = data;
   const nameInput = (
@@ -141,7 +140,7 @@ const K8sNameDescriptionField: React.FC<K8sNameDescriptionFieldProps> = ({
 
   return (
     <>
-      {isMUITheme ? (
+      {isMUITheme() ? (
         nameFormGroup
       ) : (
         <>
@@ -159,7 +158,7 @@ const K8sNameDescriptionField: React.FC<K8sNameDescriptionFieldProps> = ({
         // onDataChange={onDataChange}
       />
 
-      {!hideDescription && isMUITheme ? (
+      {!hideDescription && isMUITheme() ? (
         descriptionFormGroup
       ) : (
         <FormGroup label={descriptionLabel} fieldId={`${dataTestId}-description`}>

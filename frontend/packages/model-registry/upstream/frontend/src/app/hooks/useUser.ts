@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { UserSettings } from 'mod-arch-shared';
+import { UserSettings } from '~/shared/types';
 import { AppContext } from '~/app/AppContext';
 
 const useUser = (): UserSettings => {

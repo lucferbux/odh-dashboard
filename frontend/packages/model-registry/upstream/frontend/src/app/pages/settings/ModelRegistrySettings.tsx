@@ -1,21 +1,13 @@
 import React from 'react';
-import {
-  Divider,
-  EmptyState,
-  EmptyStateBody,
-  EmptyStateVariant,
-  Stack,
-  StackItem,
-} from '@patternfly/react-core';
+import { Divider, EmptyState, EmptyStateBody, EmptyStateVariant } from '@patternfly/react-core';
 import { PlusCircleIcon } from '@patternfly/react-icons';
-import {
-  ProjectObjectType,
-  TitleWithIcon,
-  ApplicationsPage,
-  useQueryParamNamespaces,
-} from 'mod-arch-shared';
+import ApplicationsPage from '~/shared/components/ApplicationsPage';
+import useModelRegistries from '~/app/hooks/useModelRegistries';
+import useQueryParamNamespaces from '~/shared/hooks/useQueryParamNamespaces';
+import { isMUITheme } from '~/shared/utilities/const';
+import TitleWithIcon from '~/shared/components/design/TitleWithIcon';
+import { ProjectObjectType } from '~/shared/components/design/utils';
 // import { ModelRegistrySelectorContext } from '~/app/context/ModelRegistrySelectorContext';
-import useModelRegistriesSettings from '~/app/hooks/useModelRegistriesSetting';
 import ModelRegistriesTable from './ModelRegistriesTable';
 import CreateModal from './ModelRegistryCreateModal';
 
@@ -26,7 +18,7 @@ const ModelRegistrySettings: React.FC = () => {
     mrloaded,
     loadError,
     // refreshModelRegistries
-  ] = useModelRegistriesSettings(queryParams);
+  ] = useModelRegistries(queryParams);
   const [createModalOpen, setCreateModalOpen] = React.useState(false);
   // TODO: [Midstream] Implement this when adding logic for rules review
   // const { refreshRulesReview } = React.useContext(ModelRegistrySelectorContext);
@@ -43,20 +35,21 @@ const ModelRegistrySettings: React.FC = () => {
     <>
       <ApplicationsPage
         title={
-          <TitleWithIcon
-            title="Model Registry Settings"
-            objectType={ProjectObjectType.modelRegistrySettings}
-          />
+          !isMUITheme() ? (
+            <TitleWithIcon
+              title="Model Registry Settings"
+              objectType={ProjectObjectType.modelRegistrySettings}
+            />
+          ) : (
+            'Model Registry Settings'
+          )
         }
         description={
-          <Stack hasGutter>
-            <StackItem>
-              Manage model registry settings for all users in your organization.
-            </StackItem>
-            <StackItem>
-              <Divider />
-            </StackItem>
-          </Stack>
+          !isMUITheme() ? (
+            'Manage model registry settings for all users in your organization.'
+          ) : (
+            <Divider />
+          )
         }
         loaded={loaded}
         loadError={loadError}

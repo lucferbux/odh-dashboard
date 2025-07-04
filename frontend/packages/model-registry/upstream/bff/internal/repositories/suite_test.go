@@ -2,12 +2,10 @@ package repositories
 
 import (
 	"context"
-	k8s "github.com/kubeflow/model-registry/ui/bff/internal/integrations/kubernetes"
-	k8mocks "github.com/kubeflow/model-registry/ui/bff/internal/integrations/kubernetes/k8mocks"
-	"k8s.io/client-go/kubernetes"
+	k8s "github.com/kubeflow/model-registry/ui/bff/internal/integrations"
+	"github.com/kubeflow/model-registry/ui/bff/internal/mocks"
 	"log/slog"
 	"os"
-	"sigs.k8s.io/controller-runtime/pkg/envtest"
 	logf "sigs.k8s.io/controller-runtime/pkg/log"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 	"testing"
@@ -22,11 +20,12 @@ import (
 // http://onsi.github.io/ginkgo/ to learn more about Ginkgo.
 
 var (
-	kubernetesMockedStaticClientFactory k8s.KubernetesClientFactory
-	ctx                                 context.Context
-	cancel                              context.CancelFunc
-	logger                              *slog.Logger
-	testEnv                             *envtest.Environment
+	k8sClient    k8s.KubernetesClientInterface
+	mockMRClient *mocks.ModelRegistryClientMock
+	ctx          context.Context
+	cancel       context.CancelFunc
+	logger       *slog.Logger
+	err          error
 )
 
 func TestAPI(t *testing.T) {
@@ -45,30 +44,16 @@ var _ = BeforeSuite(func() {
 	By("bootstrapping test environment")
 	logger = slog.New(slog.NewTextHandler(os.Stdout, nil))
 
-	By("bootstrapping envtest")
-	var err error
-	var clientset kubernetes.Interface
-	testEnv, clientset, err = k8mocks.SetupEnvTest(k8mocks.TestEnvInput{
-		Logger: logger,
-		Ctx:    ctx,
-		Cancel: cancel,
-	})
+	k8sClient, err = mocks.NewKubernetesClient(logger, ctx, cancel)
 	Expect(err).NotTo(HaveOccurred())
 
-	By("creating factory mock client using shared envtest")
-	kubernetesMockedStaticClientFactory, err = k8mocks.NewStaticClientFactory(clientset, logger)
+	mockMRClient, err = mocks.NewModelRegistryClient(nil)
 	Expect(err).NotTo(HaveOccurred())
 })
 
 var _ = AfterSuite(func() {
-	By("shutting down the test environment")
+	By("tearing down the test environment")
+	err := k8sClient.Shutdown(ctx, logger)
 	defer cancel()
-	logger.Info("Stopping envtest control plane")
-	if err := testEnv.Stop(); err != nil {
-		logger.Error("failed to stop envtest", "error", err)
-		Fail("Failed to stop envtest: " + err.Error())
-	} else {
-		logger.Info("envtest stopped successfully")
-	}
-
+	Expect(err).NotTo(HaveOccurred())
 })

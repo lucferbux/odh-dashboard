@@ -10,15 +10,13 @@ import {
   Spinner,
   Alert,
 } from '@patternfly/react-core';
-import {
-  EditableLabelsDescriptionListGroup,
-  EditableTextDescriptionListGroup,
-  DashboardDescriptionListGroup,
-  InlineTruncatedClipboardCopy,
-} from 'mod-arch-shared';
+import DashboardDescriptionListGroup from '~/shared/components/DashboardDescriptionListGroup';
+import EditableTextDescriptionListGroup from '~/shared/components/EditableTextDescriptionListGroup';
+import { EditableLabelsDescriptionListGroup } from '~/shared/components/EditableLabelsDescriptionListGroup';
 import { ModelVersion } from '~/app/types';
 import useModelArtifactsByVersionId from '~/app/hooks/useModelArtifactsByVersionId';
 import { ModelRegistryContext } from '~/app/context/ModelRegistryContext';
+import InlineTruncatedClipboardCopy from '~/shared/components/InlineTruncatedClipboardCopy';
 import { getLabels, mergeUpdatedLabels } from '~/app/pages/modelRegistry/screens/utils';
 import ModelPropertiesDescriptionListGroup from '~/app/pages/modelRegistry/screens/ModelPropertiesDescriptionListGroup';
 import ModelTimestamp from '~/app/pages/modelRegistry/screens/components/ModelTimestamp';

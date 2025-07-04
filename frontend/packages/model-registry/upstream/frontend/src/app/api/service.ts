@@ -1,13 +1,4 @@
 import {
-  APIOptions,
-  assembleModArchBody,
-  isModArchResponse,
-  restCREATE,
-  restGET,
-  restPATCH,
-  handleRestFailures,
-} from 'mod-arch-shared';
-import {
   CreateModelArtifactData,
   CreateModelVersionData,
   CreateRegisteredModelData,
@@ -18,15 +9,30 @@ import {
   RegisteredModelList,
   RegisteredModel,
 } from '~/app/types';
+import {
+  assembleModelRegistryBody,
+  isModelRegistryResponse,
+  restCREATE,
+  restGET,
+  restPATCH,
+} from '~/shared/api/apiUtils';
+import { APIOptions } from '~/shared/api/types';
+import { handleRestFailures } from '~/shared/api/errorUtils';
 import { bumpRegisteredModelTimestamp } from '~/app/api/updateTimestamps';
 
 export const createRegisteredModel =
   (hostPath: string, queryParams: Record<string, unknown> = {}) =>
   (opts: APIOptions, data: CreateRegisteredModelData): Promise<RegisteredModel> =>
     handleRestFailures(
-      restCREATE(hostPath, `/registered_models`, assembleModArchBody(data), queryParams, opts),
+      restCREATE(
+        hostPath,
+        `/registered_models`,
+        assembleModelRegistryBody(data),
+        queryParams,
+        opts,
+      ),
     ).then((response) => {
-      if (isModArchResponse<RegisteredModel>(response)) {
+      if (isModelRegistryResponse<RegisteredModel>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -45,12 +51,12 @@ export const createModelVersionForRegisteredModel =
       restCREATE(
         hostPath,
         `/registered_models/${registeredModelId}/versions`,
-        assembleModArchBody(data),
+        assembleModelRegistryBody(data),
         queryParams,
         opts,
       ),
     ).then((response) => {
-      if (isModArchResponse<ModelVersion>(response)) {
+      if (isModelRegistryResponse<ModelVersion>(response)) {
         const newVersion = response.data;
 
         if (!isFirstVersion) {
@@ -75,12 +81,12 @@ export const createModelArtifactForModelVersion =
       restCREATE(
         hostPath,
         `/model_versions/${modelVersionId}/artifacts`,
-        assembleModArchBody(data),
+        assembleModelRegistryBody(data),
         queryParams,
         opts,
       ),
     ).then((response) => {
-      if (isModArchResponse<ModelArtifact>(response)) {
+      if (isModelRegistryResponse<ModelArtifact>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -92,7 +98,7 @@ export const getRegisteredModel =
     handleRestFailures(
       restGET(hostPath, `/registered_models/${registeredModelId}`, queryParams, opts),
     ).then((response) => {
-      if (isModArchResponse<RegisteredModel>(response)) {
+      if (isModelRegistryResponse<RegisteredModel>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -104,7 +110,7 @@ export const getModelVersion =
     handleRestFailures(
       restGET(hostPath, `/model_versions/${modelVersionId}`, queryParams, opts),
     ).then((response) => {
-      if (isModArchResponse<ModelVersion>(response)) {
+      if (isModelRegistryResponse<ModelVersion>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -115,7 +121,7 @@ export const getListModelArtifacts =
   (opts: APIOptions): Promise<ModelArtifactList> =>
     handleRestFailures(restGET(hostPath, `/model_artifacts`, queryParams, opts)).then(
       (response) => {
-        if (isModArchResponse<ModelArtifactList>(response)) {
+        if (isModelRegistryResponse<ModelArtifactList>(response)) {
           return response.data;
         }
         throw new Error('Invalid response format');
@@ -126,7 +132,7 @@ export const getListModelVersions =
   (hostPath: string, queryParams: Record<string, unknown> = {}) =>
   (opts: APIOptions): Promise<ModelVersionList> =>
     handleRestFailures(restGET(hostPath, `/model_versions`, queryParams, opts)).then((response) => {
-      if (isModArchResponse<ModelVersionList>(response)) {
+      if (isModelRegistryResponse<ModelVersionList>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -137,7 +143,7 @@ export const getListRegisteredModels =
   (opts: APIOptions): Promise<RegisteredModelList> =>
     handleRestFailures(restGET(hostPath, `/registered_models`, queryParams, opts)).then(
       (response) => {
-        if (isModArchResponse<RegisteredModelList>(response)) {
+        if (isModelRegistryResponse<RegisteredModelList>(response)) {
           return response.data;
         }
         throw new Error('Invalid response format');
@@ -150,7 +156,7 @@ export const getModelVersionsByRegisteredModel =
     handleRestFailures(
       restGET(hostPath, `/registered_models/${registeredmodelId}/versions`, queryParams, opts),
     ).then((response) => {
-      if (isModArchResponse<ModelVersionList>(response)) {
+      if (isModelRegistryResponse<ModelVersionList>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -162,7 +168,7 @@ export const getModelArtifactsByModelVersion =
     handleRestFailures(
       restGET(hostPath, `/model_versions/${modelVersionId}/artifacts`, queryParams, opts),
     ).then((response) => {
-      if (isModArchResponse<ModelArtifactList>(response)) {
+      if (isModelRegistryResponse<ModelArtifactList>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -179,12 +185,12 @@ export const patchRegisteredModel =
       restPATCH(
         hostPath,
         `/registered_models/${registeredModelId}`,
-        assembleModArchBody(data),
+        assembleModelRegistryBody(data),
         queryParams,
         opts,
       ),
     ).then((response) => {
-      if (isModArchResponse<RegisteredModel>(response)) {
+      if (isModelRegistryResponse<RegisteredModel>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -197,12 +203,12 @@ export const patchModelVersion =
       restPATCH(
         hostPath,
         `/model_versions/${modelVersionId}`,
-        assembleModArchBody(data),
+        assembleModelRegistryBody(data),
         queryParams,
         opts,
       ),
     ).then((response) => {
-      if (isModArchResponse<ModelVersion>(response)) {
+      if (isModelRegistryResponse<ModelVersion>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');
@@ -219,12 +225,12 @@ export const patchModelArtifact =
       restPATCH(
         hostPath,
         `/model_artifacts/${modelartifactId}`,
-        assembleModArchBody(data),
+        assembleModelRegistryBody(data),
         queryParams,
         opts,
       ),
     ).then((response) => {
-      if (isModArchResponse<ModelArtifact>(response)) {
+      if (isModelRegistryResponse<ModelArtifact>(response)) {
         return response.data;
       }
       throw new Error('Invalid response format');

@@ -2,19 +2,17 @@ import React from 'react';
 import { ActionsColumn, Td, Tr } from '@patternfly/react-table';
 import { Button, Tooltip } from '@patternfly/react-core';
 import { useNavigate } from 'react-router';
-import {
-  ModelRegistryKind,
-  PlatformMode,
-  ResourceNameTooltip,
-  useModularArchContext,
-} from 'mod-arch-shared';
+import { ModelRegistry } from '~/app/types';
+import ResourceNameTooltip from '~/shared/components/ResourceNameTooltip';
+import { convertToK8sResourceCommon } from '~/app/utils';
+import { isPlatformDefault } from '~/shared/utilities/const';
 import { ModelRegistryTableRowStatus } from './ModelRegistryTableRowStatus';
 
 type ModelRegistriesTableRowProps = {
-  modelRegistry: ModelRegistryKind;
+  modelRegistry: ModelRegistry;
   // roleBindings: ContextResourceData<RoleBindingKind>; // TODO: [Midstream] Filter role bindings for this model registry
-  onEditRegistry: (obj: ModelRegistryKind) => void;
-  onDeleteRegistry: (obj: ModelRegistryKind) => void;
+  onEditRegistry: (obj: ModelRegistry) => void;
+  onDeleteRegistry: (obj: ModelRegistry) => void;
 };
 
 const ModelRegistriesTableRow: React.FC<ModelRegistriesTableRowProps> = ({
@@ -24,17 +22,15 @@ const ModelRegistriesTableRow: React.FC<ModelRegistriesTableRowProps> = ({
   onDeleteRegistry,
 }) => {
   const navigate = useNavigate();
-  const { platformMode } = useModularArchContext();
-  const isPlatformKubeflow = platformMode === PlatformMode.Kubeflow;
   const filteredRoleBindings = []; // TODO: [Midstream] Filter role bindings for this model registry
 
   return (
     <Tr>
       <Td dataLabel="Model registry name">
-        <ResourceNameTooltip resource={mr}>
-          <strong>{mr.metadata.displayName || mr.metadata.name}</strong>
+        <ResourceNameTooltip resource={convertToK8sResourceCommon(mr)}>
+          <strong>{mr.displayName || mr.name}</strong>
         </ResourceNameTooltip>
-        {mr.metadata.description && <p>{mr.metadata.description}</p>}
+        {mr.description && <p>{mr.description}</p>}
       </Td>
       <Td dataLabel="Status">
         <ModelRegistryTableRowStatus
@@ -48,7 +44,7 @@ const ModelRegistriesTableRow: React.FC<ModelRegistriesTableRowProps> = ({
           ]}
         />
       </Td>
-      {!isPlatformKubeflow && (
+      {isPlatformDefault() && (
         <Td modifier="fitContent">
           {filteredRoleBindings.length === 0 ? (
             <Tooltip content="You can manage permissions when the model registry becomes available.">
@@ -59,28 +55,28 @@ const ModelRegistriesTableRow: React.FC<ModelRegistriesTableRowProps> = ({
           ) : (
             <Button
               variant="link"
-              onClick={() => navigate(`/model-registry-settings/permissions/${mr.metadata.name}`)}
+              onClick={() => navigate(`/model-registry-settings/permissions/${mr.name}`)}
             >
               Manage permissions
             </Button>
           )}
         </Td>
       )}
-      {!isPlatformKubeflow && (
+      {isPlatformDefault() && (
         <Td isActionCell>
           <ActionsColumn
-            disabled={isPlatformKubeflow}
+            disabled={!isPlatformDefault()}
             items={[
               {
                 title: 'Edit model registry',
-                disabled: isPlatformKubeflow,
+                disabled: !isPlatformDefault(),
                 onClick: () => {
                   onEditRegistry(mr);
                 },
               },
               {
                 title: 'Delete model registry',
-                disabled: isPlatformKubeflow,
+                disabled: !isPlatformDefault(),
                 onClick: () => {
                   onDeleteRegistry(mr);
                 },

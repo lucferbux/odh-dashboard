@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { Table, DashboardEmptyTableView } from 'mod-arch-shared';
+import { Table } from '~/shared/components/table';
 import { RegisteredModel } from '~/app/types';
+import DashboardEmptyTableView from '~/shared/components/DashboardEmptyTableView';
 import { rmColumns } from './RegisteredModelsTableColumns';
 import RegisteredModelTableRow from './RegisteredModelTableRow';
 
@@ -25,7 +26,7 @@ const RegisteredModelTable: React.FC<RegisteredModelTableProps> = ({
     onClearFilters={clearFilters}
     enablePagination
     emptyTableView={<DashboardEmptyTableView onClearFilters={clearFilters} />}
-    rowRenderer={(rm: RegisteredModel) => (
+    rowRenderer={(rm) => (
       <RegisteredModelTableRow
         key={rm.name}
         hasDeploys={false}

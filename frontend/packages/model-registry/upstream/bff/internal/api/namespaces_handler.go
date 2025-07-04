@@ -1,9 +1,8 @@
 package api
 
 import (
-	"fmt"
+	"errors"
 	"github.com/kubeflow/model-registry/ui/bff/internal/constants"
-	"github.com/kubeflow/model-registry/ui/bff/internal/integrations/kubernetes"
 	"github.com/kubeflow/model-registry/ui/bff/internal/models"
 	"net/http"
 
@@ -14,20 +13,20 @@ type NamespacesEnvelope Envelope[[]models.NamespaceModel, None]
 
 func (app *App) GetNamespacesHandler(w http.ResponseWriter, r *http.Request, _ httprouter.Params) {
 
-	ctx := r.Context()
-	identity, ok := ctx.Value(constants.RequestIdentityKey).(*kubernetes.RequestIdentity)
-	if !ok || identity == nil {
-		app.badRequestResponse(w, r, fmt.Errorf("missing RequestIdentity in context"))
+	userId, ok := r.Context().Value(constants.KubeflowUserIdKey).(string)
+	if !ok || userId == "" {
+		app.serverErrorResponse(w, r, errors.New("failed to retrieve kubeflow-userid from context"))
 		return
 	}
 
-	client, err := app.kubernetesClientFactory.GetClient(ctx)
-	if err != nil {
-		app.serverErrorResponse(w, r, fmt.Errorf("failed to get Kubernetes client: %w", err))
-		return
+	var userGroups []string
+	if groups, ok := r.Context().Value(constants.KubeflowUserGroupsKey).([]string); ok {
+		userGroups = groups
+	} else {
+		userGroups = []string{}
 	}
 
-	namespaces, err := app.repositories.Namespace.GetNamespaces(client, ctx, identity)
+	namespaces, err := app.repositories.Namespace.GetNamespaces(app.kubernetesClient, userId, userGroups)
 	if err != nil {
 		app.serverErrorResponse(w, r, err)
 		return

@@ -1,9 +1,26 @@
 import * as React from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
-import { NotFound, NavDataItem } from 'mod-arch-shared';
+import NotFound from '~/shared/components/notFound/NotFound';
 import ModelRegistrySettingsRoutes from './pages/settings/ModelRegistrySettingsRoutes';
 import ModelRegistryRoutes from './pages/modelRegistry/ModelRegistryRoutes';
 import useUser from './hooks/useUser';
+
+export const isNavDataGroup = (navItem: NavDataItem): navItem is NavDataGroup =>
+  'children' in navItem;
+
+type NavDataCommon = {
+  label: string;
+};
+
+export type NavDataHref = NavDataCommon & {
+  path: string;
+};
+
+export type NavDataGroup = NavDataCommon & {
+  children: NavDataHref[];
+};
+
+type NavDataItem = NavDataHref | NavDataGroup;
 
 export const useAdminSettings = (): NavDataItem[] => {
   const { clusterAdmin } = useUser();

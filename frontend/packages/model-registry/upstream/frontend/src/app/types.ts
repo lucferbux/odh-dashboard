@@ -1,4 +1,5 @@
-import { APIOptions } from 'mod-arch-shared';
+import { AlertVariant } from '@patternfly/react-core';
+import { APIOptions } from '~/shared/api/types';
 
 export enum ModelState {
   LIVE = 'LIVE',
@@ -20,6 +21,11 @@ export type ModelRegistry = {
   displayName: string;
   description: string;
   serverAddress?: string;
+};
+
+export type ModelRegistryBody<T> = {
+  data: T;
+  metadata?: Record<string, unknown>;
 };
 
 export enum ModelRegistryMetadataType {
@@ -205,3 +211,28 @@ export type ModelRegistryAPIs = {
   patchModelVersion: PatchModelVersion;
   patchModelArtifact: PatchModelArtifact;
 };
+
+export type Notification = {
+  id?: number;
+  status: AlertVariant;
+  title: string;
+  message?: React.ReactNode;
+  hidden?: boolean;
+  read?: boolean;
+  timestamp: Date;
+};
+
+export enum NotificationActionTypes {
+  ADD_NOTIFICATION = 'add_notification',
+  DELETE_NOTIFICATION = 'delete_notification',
+}
+
+export type NotificationAction =
+  | {
+      type: NotificationActionTypes.ADD_NOTIFICATION;
+      payload: Notification;
+    }
+  | {
+      type: NotificationActionTypes.DELETE_NOTIFICATION;
+      payload: { id: Notification['id'] };
+    };

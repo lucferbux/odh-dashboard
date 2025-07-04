@@ -1,6 +1,7 @@
 import * as React from 'react';
 import {
-  Toolbar,
+  SearchInput,
+  TextInput,
   ToolbarContent,
   ToolbarFilter,
   ToolbarGroup,
@@ -8,12 +9,14 @@ import {
   ToolbarToggleGroup,
 } from '@patternfly/react-core';
 import { FilterIcon, SearchIcon } from '@patternfly/react-icons';
-import { asEnumMember, SimpleSelect } from 'mod-arch-shared';
-import { SearchType } from 'mod-arch-shared/dist/components/DashboardSearchField';
 import { ModelVersion } from '~/app/types';
+import { SearchType } from '~/shared/components/DashboardSearchField';
+import SimpleSelect from '~/shared/components/SimpleSelect';
+import { asEnumMember } from '~/shared/utilities/utils';
 import { filterModelVersions } from '~/app/pages/modelRegistry/screens/utils';
 import EmptyModelRegistryState from '~/app/pages/modelRegistry/screens/components/EmptyModelRegistryState';
-import ThemeAwareSearchInput from '~/app/pages/modelRegistry/screens/components/ThemeAwareSearchInput';
+import FormFieldset from '~/app/pages/modelRegistry/screens/components/FormFieldset';
+import { isMUITheme } from '~/shared/utilities/const';
 import ModelVersionsArchiveTable from './ModelVersionsArchiveTable';
 
 type ModelVersionsArchiveListViewProps = {
@@ -43,55 +46,70 @@ const ModelVersionsArchiveListView: React.FC<ModelVersionsArchiveListViewProps> 
     );
   }
 
-  const resetFilters = () => setSearch('');
-
   return (
     <ModelVersionsArchiveTable
       refresh={refresh}
-      clearFilters={resetFilters}
+      clearFilters={() => setSearch('')}
       modelVersions={filteredModelVersions}
       toolbarContent={
-        <Toolbar>
-          <ToolbarContent>
-            <ToolbarToggleGroup toggleIcon={<FilterIcon />} breakpoint="xl">
-              <ToolbarGroup variant="filter-group">
-                <ToolbarFilter
-                  labels={search === '' ? [] : [search]}
-                  deleteLabel={resetFilters}
-                  deleteLabelGroup={resetFilters}
-                  categoryName="Keyword"
-                >
-                  <SimpleSelect
-                    options={searchTypes.map((key) => ({
-                      key,
-                      label: key,
-                    }))}
-                    value={searchType}
-                    onChange={(newSearchType) => {
-                      const enumMember = asEnumMember(newSearchType, SearchType);
-                      if (enumMember) {
-                        setSearchType(enumMember);
-                      }
-                    }}
-                    icon={<FilterIcon />}
-                  />
-                </ToolbarFilter>
-                <ToolbarItem>
-                  <ThemeAwareSearchInput
-                    value={search}
-                    onChange={setSearch}
-                    onClear={resetFilters}
-                    placeholder={`Find by ${searchType.toLowerCase()}`}
-                    fieldLabel={`Find by ${searchType.toLowerCase()}`}
+        <ToolbarContent>
+          <ToolbarToggleGroup toggleIcon={<FilterIcon />} breakpoint="xl">
+            <ToolbarGroup variant="filter-group">
+              <ToolbarFilter
+                labels={search === '' ? [] : [search]}
+                deleteLabel={() => setSearch('')}
+                deleteLabelGroup={() => setSearch('')}
+                categoryName="Keyword"
+              >
+                <SimpleSelect
+                  options={searchTypes.map((key) => ({
+                    key,
+                    label: key,
+                  }))}
+                  value={searchType}
+                  onChange={(newSearchType) => {
+                    const enumMember = asEnumMember(newSearchType, SearchType);
+                    if (enumMember) {
+                      setSearchType(enumMember);
+                    }
+                  }}
+                  icon={<FilterIcon />}
+                />
+              </ToolbarFilter>
+              <ToolbarItem>
+                {isMUITheme() ? (
+                  <FormFieldset
                     className="toolbar-fieldset-wrapper"
+                    component={
+                      <TextInput
+                        value={search}
+                        type="text"
+                        onChange={(_, searchValue) => {
+                          setSearch(searchValue);
+                        }}
+                        style={{ minWidth: '200px' }}
+                        data-testid="model-versions-archive-table-search"
+                        aria-label="Search"
+                      />
+                    }
+                    field={`Find by ${searchType.toLowerCase()}`}
+                  />
+                ) : (
+                  <SearchInput
+                    placeholder={`Find by ${searchType.toLowerCase()}`}
+                    value={search}
+                    onChange={(_, searchValue) => {
+                      setSearch(searchValue);
+                    }}
+                    onClear={() => setSearch('')}
                     style={{ minWidth: '200px' }}
                     data-testid="model-versions-archive-table-search"
                   />
-                </ToolbarItem>
-              </ToolbarGroup>
-            </ToolbarToggleGroup>
-          </ToolbarContent>
-        </Toolbar>
+                )}
+              </ToolbarItem>
+            </ToolbarGroup>
+          </ToolbarToggleGroup>
+        </ToolbarContent>
       }
     />
   );

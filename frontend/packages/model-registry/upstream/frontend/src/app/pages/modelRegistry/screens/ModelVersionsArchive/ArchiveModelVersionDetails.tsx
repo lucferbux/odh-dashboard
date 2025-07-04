@@ -1,12 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { Button, Flex, FlexItem, Label, Content, Tooltip, Truncate } from '@patternfly/react-core';
-import {
-  InferenceServiceKind,
-  ServingRuntimeKind,
-  FetchStateObject,
-  ApplicationsPage,
-} from 'mod-arch-shared';
+
+import ApplicationsPage from '~/shared/components/ApplicationsPage';
 import { ModelRegistrySelectorContext } from '~/app/context/ModelRegistrySelectorContext';
 import useRegisteredModelById from '~/app/hooks/useRegisteredModelById';
 import useModelVersionById from '~/app/hooks/useModelVersionById';
@@ -14,6 +10,8 @@ import { ModelState } from '~/app/types';
 import { modelVersionUrl } from '~/app/pages/modelRegistry/screens/routeUtils';
 import ModelVersionDetailsTabs from '~/app/pages/modelRegistry/screens/ModelVersionDetails/ModelVersionDetailsTabs';
 import { ModelVersionDetailsTab } from '~/app/pages/modelRegistry/screens/ModelVersionDetails/const';
+import { FetchStateObject } from '~/shared/types';
+import { InferenceServiceKind, ServingRuntimeKind } from '~/shared/k8sTypes';
 import ArchiveModelVersionDetailsBreadcrumb from './ArchiveModelVersionDetailsBreadcrumb';
 
 type ArchiveModelVersionDetailsProps = {

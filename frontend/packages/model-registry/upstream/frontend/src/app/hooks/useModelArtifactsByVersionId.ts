@@ -1,10 +1,9 @@
 import * as React from 'react';
-import {
-  useFetchState,
+import useFetchState, {
   FetchState,
   FetchStateCallbackPromise,
   NotReadyError,
-} from 'mod-arch-shared';
+} from '~/shared/utilities/useFetchState';
 import { ModelArtifactList } from '~/app/types';
 import { useModelRegistryAPI } from '~/app/hooks/useModelRegistryAPI';
 

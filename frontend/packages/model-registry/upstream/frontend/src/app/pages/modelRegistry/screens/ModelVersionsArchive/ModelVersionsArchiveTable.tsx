@@ -1,6 +1,7 @@
 import * as React from 'react';
-import { Table, DashboardEmptyTableView } from 'mod-arch-shared';
+import { Table } from '~/shared/components/table';
 import { ModelVersion } from '~/app/types';
+import DashboardEmptyTableView from '~/shared/components/DashboardEmptyTableView';
 import ModelVersionsTableRow from '~/app/pages/modelRegistry/screens/ModelVersions/ModelVersionsTableRow';
 import { mvColumns } from '~/app/pages/modelRegistry/screens/ModelVersions/ModelVersionsTableColumns';
 
@@ -25,7 +26,7 @@ const ModelVersionsArchiveTable: React.FC<ModelVersionsArchiveTableProps> = ({
     onClearFilters={clearFilters}
     emptyTableView={<DashboardEmptyTableView onClearFilters={clearFilters} />}
     defaultSortColumn={1}
-    rowRenderer={(mv: ModelVersion) => (
+    rowRenderer={(mv) => (
       <ModelVersionsTableRow key={mv.name} modelVersion={mv} isArchiveRow refresh={refresh} />
     )}
   />

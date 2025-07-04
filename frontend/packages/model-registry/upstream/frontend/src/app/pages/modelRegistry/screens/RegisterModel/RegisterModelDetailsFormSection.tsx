@@ -7,8 +7,10 @@ import {
   TextInput,
 } from '@patternfly/react-core';
 import React from 'react';
-import { UpdateObjectAtPropAndValue, FormSection } from 'mod-arch-shared';
+import FormSection from '~/shared/components/pf-overrides/FormSection';
+import { UpdateObjectAtPropAndValue } from '~/shared/types';
 import FormFieldset from '~/app/pages/modelRegistry/screens/components/FormFieldset';
+import { isMUITheme } from '~/shared/utilities/const';
 import { MR_CHARACTER_LIMIT } from './const';
 import { RegisterModelFormData } from './useRegisterModelData';
 
@@ -52,7 +54,7 @@ const RegisterModelDetailsFormSection = <D extends RegisterModelFormData>({
       description="Provide general details that apply to all versions of this model."
     >
       <FormGroup label="Model name" isRequired fieldId="model-name">
-        <FormFieldset component={modelNameInput} />
+        {isMUITheme() ? <FormFieldset component={modelNameInput} /> : modelNameInput}
         {hasModelNameError && (
           <FormHelperText>
             <HelperText>
@@ -66,7 +68,11 @@ const RegisterModelDetailsFormSection = <D extends RegisterModelFormData>({
         )}
       </FormGroup>
       <FormGroup label="Model description" fieldId="model-description">
-        <FormFieldset component={modelDescriptionInput} field="Model Description" />
+        {isMUITheme() ? (
+          <FormFieldset component={modelDescriptionInput} field="Model Description" />
+        ) : (
+          modelDescriptionInput
+        )}
       </FormGroup>
     </FormSection>
   );

@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Stack, StackItem } from '@patternfly/react-core';
-import { FieldGroupHelpLabelIcon } from 'mod-arch-shared';
+import FieldGroupHelpLabelIcon from '~/shared/components/FieldGroupHelpLabelIcon';
 
 const ResourceNameDefinitionTooltip: React.FC = () => (
   <FieldGroupHelpLabelIcon
