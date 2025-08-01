@@ -23,7 +23,7 @@ export const initializeApp = async (
   fastify.register(fastifyWebsocket);
 
   fastify.register(fastifyStatic, {
-    root: path.join(__dirname, '../../frontend/public'),
+    root: path.join(__dirname, '../../../frontend/public'),
     wildcard: false,
   });
 
