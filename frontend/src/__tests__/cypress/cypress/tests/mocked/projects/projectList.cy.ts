@@ -349,7 +349,7 @@ describe('Projects details', () => {
       ]);
     });
     notebookRow.findNotebookStatusText().should('have.text', 'Stopped');
-    notebookRow.findDisabledNotebookLink().should('exist');
+    notebookRow.findDisabledNotebookLink().should('be.disabled');
   });
 
   describe('Workbench disabled', () => {
