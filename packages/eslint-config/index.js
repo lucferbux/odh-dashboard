@@ -5,7 +5,6 @@ const react = require('./react');
 const typescript = require('./typescript');
 const markdown = require('./markdown');
 const node = require('./node');
-const yaml = require('./yaml');
 const prettier = require('./prettier');
 
 const { merge } = require('./utils');
@@ -25,7 +24,6 @@ const addNoExtraneousDependenciesRule = (config, dirname) => {
   return clone;
 };
 
-// TODO: enable yaml once formatting is updated with prettier
 const recommended = {
   recommendedCore: (dirname) =>
     addNoExtraneousDependenciesRule(
@@ -36,7 +34,6 @@ const recommended = {
           '@odh-dashboard/eslint-config/node',
           '@odh-dashboard/eslint-config/package-restrictions',
           '@odh-dashboard/eslint-config/markdown',
-          // '@odh-dashboard/eslint-config/yaml',
           '@odh-dashboard/eslint-config/prettier',
         ],
       },
@@ -52,7 +49,6 @@ const recommended = {
           '@odh-dashboard/eslint-config/package-restrictions',
           '@odh-dashboard/eslint-config/typescript',
           '@odh-dashboard/eslint-config/markdown',
-          // '@odh-dashboard/eslint-config/yaml',
           '@odh-dashboard/eslint-config/prettier',
         ],
       },
@@ -69,7 +65,6 @@ const recommended = {
           '@odh-dashboard/eslint-config/package-restrictions',
           '@odh-dashboard/eslint-config/typescript',
           '@odh-dashboard/eslint-config/markdown',
-          // '@odh-dashboard/eslint-config/yaml',
           '@odh-dashboard/eslint-config/prettier',
         ],
       },
@@ -95,7 +90,6 @@ module.exports = {
   typescript,
   markdown,
   node,
-  yaml,
 
   // always include prettier
   prettier,
