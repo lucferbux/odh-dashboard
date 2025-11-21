@@ -4,6 +4,7 @@ import { SupportedArea, SupportedAreasState, DataScienceStackComponent } from '.
 export const techPreviewFlags = {
   disableModelRegistry: true,
   genAiStudio: false,
+  modArchModule: true,
   modelAsService: false,
   aiCatalogSettings: false,
 } satisfies Partial<DashboardCommonConfig>;

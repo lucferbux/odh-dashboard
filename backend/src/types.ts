@@ -51,6 +51,7 @@ export type DashboardConfig = K8sResourceCommon & {
       disableLMEval: boolean;
       disableFeatureStore: boolean;
       genAiStudio: boolean;
+      modArchModule: boolean;
       modelAsService: boolean;
     };
     // Intentionally disjointed from the CRD, we should move away from this code-wise now; CRD later

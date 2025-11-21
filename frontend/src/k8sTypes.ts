@@ -1296,6 +1296,7 @@ export type DashboardCommonConfig = {
   trainingJobs: boolean;
   disableFeatureStore?: boolean;
   genAiStudio?: boolean;
+  modArchModule?: boolean;
   modelAsService?: boolean;
   aiCatalogSettings?: boolean;
 };

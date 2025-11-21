@@ -1,36 +1,105 @@
-1. Navigate to the `packages` folder `cd packages`
-2. Start a new modular architecture project with `npx mod-arch-installer <your-module-name> --flavor default`.
+# Onboarding a New Modular Architecture Module
 
+This guide outlines the steps to create and onboard a new modular architecture module into the ODH Dashboard.
 
+## Prerequisites
 
+- Node.js and npm installed.
+- Access to the ODH Dashboard repository.
 
+## Steps
+
+### 1. Navigate to the Packages Directory
+
+Open your terminal and navigate to the `packages` folder within the repository:
+
+```bash
+cd packages
 ```
-I'm creating a new guide to onboard a new modular architecture module, I want you to add the steps, the overall steps are:
 
-1. Navigate to the `packages` folder `cd packages`
-2. Start a new modular architecture project with `npx mod-arch-installer <your-module-name> --flavor default`.
-3. Follow `module-federation.md` to create a package.json configuration
+### 2. Initialize the Module
+
+Start a new modular architecture project using the installer. Replace `<your-module-name>` with the desired name for your module.
+
+```bash
+npx mod-arch-installer <your-module-name> --flavor default
 ```
 
+### 3. Adapt the Module Name
 
+After initialization, you need to update the generated code to match your specific module name. Search for occurrences of `mod-arch` and `modArch` in your new package and replace them with your module's identifier.
 
+Key files to check:
+
+- `package.json`
+- `frontend/src/odh/extensions.ts` (or similar entry point)
+- `Makefile`
+
+### 4. Configure the Port
+
+By default, the modular architecture component runs on port `9103`. If you need to use a different port or want to ensure it doesn't conflict with other modules:
+
+1. **Update `Makefile`**:
+   Open `packages/<your-module-name>/Makefile` and find the `dev-frontend-federated` target. Update the `PORT` variable:
+
+   ```makefile
+   dev-frontend-federated:
+       cd frontend && AUTH_METHOD=user_token DEPLOYMENT_MODE=federated STYLE_THEME=patternfly PORT=<your-port> npm run start:dev
+   ```
+
+2. **Update `package.json`**:
+   Open `packages/<your-module-name>/package.json` and update the `module-federation` configuration:
+
+   ```json
+   "module-federation": {
+     "local": {
+       "port": <your-port>
+     }
+   }
+   ```
+
+### 5. Add Feature Flag
+
+To enable your module in the main dashboard, you need to add a feature flag.
+
+1. Open `frontend/src/concepts/areas/const.ts` in the root of the repository.
+2. Search for existing flags (e.g., search for `disable` or `techPreviewFlags`).
+3. Add your new feature flag to the appropriate group (e.g., `techPreviewFlags`):
+
+   ```typescript
+   export const techPreviewFlags = {
+     // ... existing flags
+     // yourModuleName: true, // Set to true to enable by default in tech preview, or false otherwise
+   } satisfies Partial<DashboardCommonConfig>;
+   ```
+
+### 6. Run the Application
+
+Now that your project is configured, you can run the entire stack (backend, frontend, and your new module).
+
+From the root of the repository, run:
+
+```bash
+npm run dev:frontend
 ```
-✖ npx eslint --max-warnings 0:
 
-Oops! Something went wrong! :(
+And in other terminal
 
-ESLint: 8.57.1
-
-ESLint couldn't determine the plugin "prettier" uniquely.
-
-- /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/node_modules/eslint-plugin-prettier/eslint-plugin-prettier.js (loaded in "packages/mod-arch-module/frontend/.eslintrc.cjs")
-- /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/node_modules/eslint-plugin-prettier/eslint-plugin-prettier.js (loaded in ".eslintrc.js » @odh-dashboard/eslint-config/prettier")
-
-Please remove the "plugins" setting from either config or remove either plugin installation.
-
-If you still can't figure out the problem, please stop by https://eslint.org/chat/help to chat with the team.
-
-
-✖ npx eslint --max-warnings 0 failed to spawn:
-Command failed with exit code 2: npx eslint --max-warnings 0 /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/docs/onboard-modular-architecture.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/.github/copilot-instructions.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/CONTRIBUTING.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/README.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/api/openapi/mod-arch.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/bff/.golangci.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/bff/README.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/docs/README.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/docs/install.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/docs/kubeflow-development-guide.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/docs/local-deployment-guide-ui.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/docs/local-deployment-guide.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/README.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/babel.config.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/config/dotenv.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/config/moduleFederation.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/config/stylePaths.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/config/transform.file.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/config/transform.style.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/config/webpack.common.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/config/webpack.dev.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/config/webpack.prod.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/docs/README.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/docs/architecture.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/docs/dev-setup.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/docs/env-variables.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/docs/testing.md /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/jest.config.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__mocks__/mockNamespace.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__mocks__/mockUserSettings.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__mocks__/styleMock.js /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress.config.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/pages/appChrome.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/pages/components/Contextual.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/pages/components/Modal.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/pages/components/Notification.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/pages/components/table.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/pages/navBar.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/pages/pageNoteFound.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/support/commands/api.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/support/commands/application.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/support/commands/axe.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/support/commands/index.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/support/e2e.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/tests/mocked/kubeflowStandalone/navBar.cy.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/utils/should.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/utils/testConfig.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/cypress/utils/url.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/cypress/webpack.config.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/unit/jest.d.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/unit/jest.setup.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/unit/testUtils/hooks.spec.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/__tests__/unit/testUtils/hooks.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/App.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/AppRoutes.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/api/k8s.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/context/AppContext.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/hooks/useNamespaces.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/hooks/useNotification.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/hooks/useUser.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/pages/MainPage.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/pages/SettingsMainPage.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/standalone/AppNavSidebar.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/standalone/NavBar.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/standalone/NavSidebar.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/standalone/ToastNotification.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/standalone/ToastNotifications.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/standalone/__tests__/NavBar.test.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/standalone/types.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/types.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/app/utilities/const.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/bootstrap.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/index.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/shared/components/ApplicationsPage.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/shared/components/index.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/shared/components/notFound.tsx /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/shared/images/index.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/shared/index.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/shared/types/index.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/shared/types/k8s.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/frontend/src/typings.d.ts /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/base/kustomization.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/base/mod-arch-ui-deployment.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/base/mod-arch-ui-role.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/base/mod-arch-ui-service-account.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/base/mod-arch-ui-service.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/istio/authorization-policy-ui.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/istio/destination-rule-ui.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/istio/kustomization.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/istio/mod-arch-ui-service.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/istio/virtual-service.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/kubeflow/kustomization.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/kubeflow/mod-arch-ui-deployment.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/standalone/auth-proxy-configmap.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/standalone/kubeflow-dashboard-rbac.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/standalone/kustomization.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/standalone/mod-arch-ui-deployment.yaml /Users/lucasfernandezaragon/Developer/RedHat/Repos/odh-dashboard/packages/mod-arch-module/manifests/overlays/standalone/mod-arch-ui-service.yaml
+```bash
+npm run dev:backend
 ```
+
+And once you have that in another terminal run
+
+```bash
+cd packages/<your-module>
+make dev-start-federated
+```
+
+This command will start:
+
+- The Dashboard Backend
+- The Dashboard Frontend (Shell)
+- Your new Modular Architecture Module (Federated)
+
+Access the dashboard in your browser (usually at `http://localhost:4000` or the port configured for the shell) and verify that your module is loaded.

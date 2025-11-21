@@ -41,6 +41,7 @@ export type MockDashboardConfigType = {
   disableKueue?: boolean;
   disableFeatureStore?: boolean;
   genAiStudio?: boolean;
+  modArchModule?: boolean;
   modelAsService?: boolean;
   trainingJobs?: boolean;
   aiCatalogSettings?: boolean;
@@ -56,6 +57,7 @@ export const mockDashboardConfig = ({
   disableBYONImageStream = false,
   disableISVBadges = false,
   genAiStudio = false,
+  modArchModule = true,
   modelAsService = true,
   disableAppLauncher = false,
   disableUserManagement = false,
@@ -227,6 +229,7 @@ export const mockDashboardConfig = ({
       disablePerformanceMetrics,
       disableKServe,
       genAiStudio,
+      modArchModule,
       modelAsService,
       disableKServeAuth,
       disableKServeMetrics,
