@@ -4,6 +4,7 @@ import { SupportedArea, SupportedAreasState, DataScienceStackComponent } from '.
 export const techPreviewFlags = {
   disableModelRegistry: true,
   genAiStudio: false,
+  modArchModule: false,
   modelAsService: false,
   aiCatalogSettings: false,
   mlflow: false,

@@ -104,6 +104,8 @@ spec:
                       type: boolean
                     genAiStudio:
                       type: boolean
+                    modArchModule:
+                      type: boolean
                     modelAsService:
                       type: boolean
                   x-kubernetes-validations:
