@@ -3,8 +3,6 @@ import type {
   RouteExtension,
   AreaExtension,
 } from '@odh-dashboard/plugin-core/extension-points';
-// eslint-disable-next-line import/no-extraneous-dependencies
-//import { DataScienceStackComponent } from '@odh-dashboard/internal/concepts/areas/types';
 
 const MODEL_AS_SERVICE = 'model-as-service';
 
@@ -36,7 +34,7 @@ const extensions: (NavExtension | RouteExtension | AreaExtension)[] = [
     },
     properties: {
       path: '/maas/tiers-view/*',
-      component: () => import('./ModArchWrapper'),
+      component: () => import('./MaaSWrapper'),
     },
   },
 ];
