@@ -1,0 +1,8 @@
+# Ignore documentation spec files with code examples
+docs/specs/
+
+# Ignore project-navigator package (has its own eslint config)
+packages/project-navigator/
+
+# Ignore lint-staged config (dotfile ignored by default)
+.lintstagedrc.js
