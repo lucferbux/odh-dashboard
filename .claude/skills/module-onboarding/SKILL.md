@@ -11,60 +11,120 @@ See [reference.md](reference.md) for naming conventions, port ranges, templates,
 
 ## Arguments
 
-`$ARGUMENTS` — Module name in kebab-case (e.g., `my-module`). If empty, ask the user.
+`$ARGUMENTS` — Module name in kebab-case (e.g., `my-module`). If empty, ask the user in Phase 0.
 
-## Phase 0: Parse & Validate
+## Phase 0: Upfront Q&A
 
-1. **Extract the module name** from `$ARGUMENTS`. If empty, ask the user for a name.
+Collect all inputs before any scaffolding begins. Ask each question in sequence, validating as you go.
 
-2. **Validate the name**:
-   - Must be non-empty, lowercase, kebab-case (only `[a-z0-9-]`, no leading/trailing hyphens).
-   - Must not already exist: check that `packages/<name>/` does not exist.
+### Q1: Module Name
 
-3. **Compute all name variants** (see reference.md § Name Transformation Rules):
+Extract from `$ARGUMENTS` if provided. Otherwise ask:
 
-   ```text
-   kebab-case:       my-module
-   camelCase:        myModule
-   UPPER_SNAKE_CASE: MY_MODULE
-   Title Case:       My Module
-   ```
+> What is the module name? (kebab-case, e.g., `my-module`)
 
-   And derived identifiers:
+**Validate**:
+- Must be non-empty, lowercase, kebab-case (only `[a-z0-9-]`, no leading/trailing hyphens).
+- Must not already exist: check that `packages/<name>/` does not exist.
 
-   ```text
-   Package:       @odh-dashboard/my-module
-   SupportedArea: PLUGIN_MY_MODULE = 'plugin-my-module'
-   Feature flag:  myModule
-   MF name:       myModule
-   Proxy path:    /my-module/api
-   ```
+**Compute all name variants** (see reference.md § Name Transformation Rules):
 
-4. **Ask the user**: Include a Go BFF (backend-for-frontend)? Default: **yes**.
+```text
+kebab-case:       my-module
+camelCase:        myModule
+UPPER_SNAKE_CASE: MY_MODULE
+Title Case:       My Module
+```
 
-## Phase 1: Port Allocation
+And derived identifiers:
 
-1. **Scan existing frontend ports**:
+```text
+Package:       @odh-dashboard/my-module
+SupportedArea: PLUGIN_MY_MODULE = 'plugin-my-module'
+Feature flag:  myModule
+MF name:       myModule
+Proxy path:    /my-module/api
+```
 
-   ```bash
-   jq -r '."module-federation".local.port // empty' packages/*/package.json 2>/dev/null | awk '$1>=9100 && $1<=9399' | sort -n
-   ```
+### Q2: Module Type
 
-   This reads every `packages/*/package.json` that has a `module-federation` key and collects `module-federation.local.port` values. Find the next unused integer in the **9100–9399** range.
+> What type of module is this?
+> 1. **Frontend + BFF** (default) — React frontend with Go backend-for-frontend
+> 2. **Frontend only** — React frontend, no backend
+> 3. **BFF only** — Go backend service, no frontend UI
 
-2. **Scan existing BFF ports** (if BFF included):
+Store the choice. This determines:
+- Whether the BFF scaffold is included
+- Whether the Dockerfile includes a Go builder stage
+- Whether a BFF port is needed (Q5)
 
-   ```bash
-   grep -r 'PROXY_PORT=' packages/*/Makefile | grep -oP '\d{4,5}' | sort -n
-   ```
+### Q3: Maturity Level
 
-   Find the next unused integer in the **4000–4099** range.
+> Is this module Tech Preview or Generally Available?
+> 1. **Tech Preview** (default) — Feature flag defaults to `false`, users must opt in
+> 2. **GA** — Feature flag defaults to `true`, enabled by default
 
-3. **Report** the chosen ports to the user:
-   - Frontend dev port: `<port>`
-   - BFF proxy port: `<port>` (if applicable)
+Store the choice. This determines:
+- `devTemporaryFeatureFlags` default value: `false` (TP) or `true` (GA)
 
-## Phase 2: Scaffold with mod-arch-installer
+### Q4: Frontend Port
+
+Scan existing frontend ports:
+
+```bash
+jq -r '."module-federation".local.port // empty' packages/*/package.json 2>/dev/null | awk '$1>=9100 && $1<=9399' | sort -n
+```
+
+Find the next unused integer in the **9100–9399** range.
+
+> Suggested frontend dev port: **<suggested_port>**
+> Accept? (yes / enter a different port)
+
+If user provides a different port, validate it's in the 9100–9399 range and not already in use.
+
+Skip this question entirely if module type is **BFF only**.
+
+### Q5: BFF Port
+
+Only ask if module type includes BFF (Q2 = "Frontend + BFF" or "BFF only").
+
+Scan existing BFF ports:
+
+```bash
+grep -r 'PROXY_PORT=' packages/*/Makefile | grep -oP '\d{4,5}' | sort -n
+```
+
+Find the next unused integer in the **4000–4099** range.
+
+> Suggested BFF proxy port: **<suggested_port>**
+> Accept? (yes / enter a different port)
+
+If user provides a different port, validate it's in the 4000–4099 range and not already in use.
+
+### Confirmation
+
+Display a summary table:
+
+```text
+Module onboarding summary:
+
+  Name:            my-module
+  Package:         @odh-dashboard/my-module
+  Type:            Frontend + BFF
+  Maturity:        Tech Preview (feature flag defaults to false)
+  Frontend port:   9112
+  BFF port:        4012
+  Feature flag:    myModule
+  SupportedArea:   PLUGIN_MY_MODULE
+
+Proceed? (yes / no / edit)
+```
+
+- `yes` → continue to Phase 1
+- `no` → abort
+- `edit` → ask which field to change, update it, re-display summary
+
+## Phase 1: Scaffold with mod-arch-installer
 
 ### Step 1: Run the installer
 
@@ -81,7 +141,7 @@ After the installer completes, verify the following files exist and are correct.
 **`packages/<name>/package.json`**:
 - `name` is `@odh-dashboard/<name>`
 - `module-federation.name` is the correct `<camelCase>`
-- `module-federation.local.port` matches the allocated frontend port from Phase 1
+- `module-federation.local.port` matches the port chosen in Phase 0 Q4
 - `module-federation.proxy[0].path` is `/<name>/api`
 - `module-federation.service.port` is `8043`
 - If BFF included, add `bffConfig` section:
@@ -109,8 +169,8 @@ After the installer completes, verify the following files exist and are correct.
 - Contains `app.route` stub with a lazy-loaded placeholder component
 
 **`packages/<name>/Makefile`**:
-- `PORT` variable matches the allocated frontend port
-- `PROXY_PORT` variable matches the allocated BFF port (if applicable)
+- `PORT` variable matches the frontend port from Phase 0 Q4
+- `PROXY_PORT` variable matches the BFF port from Phase 0 Q5 (if applicable)
 - Has standard targets: `dev-install-dependencies`, `dev-frontend-federated`, `dev-start-federated`
 - If BFF included: has `dev-bff-federated`, `dev-bff-e2e-mock`, `dev-bff-e2e-cluster` targets
 
@@ -150,7 +210,7 @@ export default OverviewPage;
 
 Ensure the extensions file's route component import points to this file.
 
-## Phase 3: Register in Host
+## Phase 2: Register in Host
 
 This phase modifies **three files** in the host application. Read each file first to find the correct insertion point.
 
@@ -175,8 +235,14 @@ PLUGIN_<UPPER_SNAKE> = 'plugin-<kebab>',
 **a)** Add the flag default to `devTemporaryFeatureFlags`:
 
 ```typescript
-<camelCase>: false,
+<camelCase>: false,   // Tech Preview
+// OR
+<camelCase>: true,    // GA
 ```
+
+Use the maturity level chosen in Phase 0 Q3:
+- **Tech Preview** → `false` (users must opt in via dashboard config)
+- **GA** → `true` (enabled by default)
 
 **b)** Add an entry to `SupportedAreasStateMap` (at the end, before the closing `};`):
 
@@ -186,16 +252,18 @@ PLUGIN_<UPPER_SNAKE> = 'plugin-<kebab>',
 },
 ```
 
-## Phase 4: Dockerfile Verification
+## Phase 3: Dockerfile Verification
 
 1. Check that `packages/<name>/Dockerfile.workspace` exists.
 2. Read it and verify:
    - `ARG MODULE_NAME` default matches `<name>`
    - Multi-stage build has Node builder stage (frontend) and, if BFF included, Go builder stage
+   - If **BFF only** (no frontend), the Dockerfile should omit the Node builder stage
+   - If **Frontend only** (no BFF), the Dockerfile should omit the Go builder stage
    - Final stage copies built artifacts correctly
 3. If the Dockerfile is missing, copy from `packages/plugin-template/Dockerfile.workspace` and patch the `MODULE_NAME` default.
 
-## Phase 5: Install & Build Verification
+## Phase 4: Install & Build Verification
 
 Run these sequentially. Stop and fix on first failure before proceeding.
 
@@ -247,18 +315,20 @@ If `podman` is not available, try `docker build` instead. This confirms the full
 
 If this step is slow or the user wants to skip it, it can be deferred — the earlier steps already confirm correctness. Ask before running.
 
-## Phase 6: Report
+## Phase 5: Report
 
 Summarize the completed onboarding:
 
 1. **Files created** — list all new files under `packages/<name>/`
 2. **Host files modified** — `k8sTypes.ts`, `types.ts`, `const.ts`
 3. **Port assignments** — frontend port, BFF port (if applicable)
-4. **Build results** — pass/fail for each verification step
-5. **Next steps** for the team:
+4. **Maturity** — Tech Preview or GA, and what that means for the feature flag
+5. **Build results** — pass/fail for each verification step
+6. **Next steps** for the team:
    - Write feature code in `packages/<name>/frontend/src/app/`
    - Add unit tests in `packages/<name>/__tests__/`
    - Add E2E tests in `packages/cypress/cypress/tests/e2e/<name>/`
    - Add contract tests in `packages/<name>/contract-tests/` (if BFF)
    - Start the dev server: `cd packages/<name> && make dev-start-federated`
    - Enable the feature locally: set `<camelCase>: true` in the dashboard config
+   - Run `/konflux-onboarding <name>` to set up CI/CD pipelines

@@ -6,7 +6,7 @@ How the Dashboard Konflux onboarding skill integrates with the DevOps `create-co
 
 The DevOps team provides a Claude Code plugin (`create-component-onboarding-jira`) that automates Konflux infrastructure provisioning. It generates a `component_onboarding_details.yaml` validated against a JSON Schema, attaches it to a Jira ticket, and DevOps GitLab CI processes it.
 
-**Two separate runs are required** — one for ODH and one for RHOAI — because each product context has different schema requirements and targets different repos/build pipelines.
+**Two separate runs are required** — one for ODH and one for RHOAI — because each product context has different schema requirements and targets different repos/build pipelines. When no Jira URL is provided, the skill automatically clones a product-specific template (ODH: `RHOAIENG-35683`, RHOAI: `RHOAIENG-17225`) to create a new ticket.
 
 ## What DevOps Automates
 
@@ -59,6 +59,11 @@ The skill's Python scripts need:
 
 Scripts live at: `~/.claude/plugins/cache/opendatahub-skills/aiops-skills/0.1.0/`
 
+**Important**: Claude Code shell state does not persist between Bash calls. You must export `JIRA_USER_EMAIL` and `JIRA_API_TOKEN` in every Bash invocation that calls the Python scripts. The skill handles this internally, but if running scripts manually, prefix each command:
+```bash
+JIRA_USER_EMAIL='you@redhat.com' JIRA_API_TOKEN='your-token' uv run --script scripts/...
+```
+
 ### MCP Fallback (when env vars are not set)
 
 If `JIRA_USER_EMAIL` or `JIRA_API_TOKEN` are not set, the YAML generation and validation scripts still work (they don't need Jira credentials), but the Jira attachment/update scripts will fail. In this case:
@@ -70,7 +75,106 @@ If `JIRA_USER_EMAIL` or `JIRA_API_TOKEN` are not set, the YAML generation and va
    - `jira_create_issue_link` — link to parent feature
    - `jira_add_comment` — post summary comment
 
-## Q&A Flow
+## Running the Skill
+
+### Invocation
+
+```text
+# Recommended: no URL — auto-creates a Jira from the product template
+/create-component-onboarding-jira
+
+# With an existing Jira — attaches YAML directly
+/create-component-onboarding-jira https://redhat.atlassian.net/browse/RHOAIENG-1234
+```
+
+### Typical Workflow
+
+Run the skill **twice** per component — once for ODH, once for RHOAI:
+
+1. **Run 1 (ODH)**: Creates a ticket from template `RHOAIENG-35683`, targets the upstream `opendatahub-io` repo
+2. **Run 2 (RHOAI)**: Creates a ticket from template `RHOAIENG-17225`, targets the downstream `red-hat-data-services` repo
+
+Both tickets should link to the same parent feature (e.g. `RHOAIENG-60566`).
+
+### Example: ODH Run (typical non-operator component)
+
+```text
+Q1  Product:          ODH
+Q2  Build type:       CI
+Q3  Component name:   odh-new-module
+Q4  Repo URL:         https://github.com/opendatahub-io/odh-dashboard
+Q5  Branch:           main
+Q6  Context path:     ./
+Q7  Dockerfile path:  ./packages/new-module/Dockerfile.workspace
+Q8  Operator:         no
+                      # Most dashboard components are NOT operators.
+                      # Only dashboard-operator itself answers "yes" here.
+```
+
+Generated YAML:
+```yaml
+inputs:
+  product_context: ODH
+  component_name: odh-new-module
+  repo_url: https://github.com/opendatahub-io/odh-dashboard
+  repo_branch: main
+  context_path: ./
+  dockerfile_path: ./packages/new-module/Dockerfile.workspace
+  build_type: CI
+  is_operator: false
+  # operator_manifest_src_path and operator_manifest_dest_path are
+  # omitted when is_operator is false (most components).
+```
+
+### Example: RHOAI Run (typical non-operator component)
+
+```text
+Q1  Product:          RHOAI
+Q2a Target version:   3.5-ea-2       → canonical: 3.5-ea-2
+Q2b Architectures:    x86_64, arm64, ppc64le, s390x
+Q3  Component name:   odh-new-module
+Q3.5 Release category: Generally Available
+Q4  Repo URL:         https://github.com/red-hat-data-services/odh-dashboard
+Q4.5 Descriptions:    (auto-suggested from README, confirm or edit)
+Q5  Branch:           (auto-derived) → rhoai-3.5-ea.2
+Q6  Context path:     ./
+Q7  Dockerfile path:  Dockerfile.konflux.new-module
+                      # RHOAI Dockerfiles must start with "Dockerfile.konflux"
+Q8  Operator:         no
+                      # Most dashboard components are NOT operators.
+                      # Only dashboard-operator itself answers "yes" here.
+```
+
+Generated YAML:
+```yaml
+inputs:
+  product_context: RHOAI
+  component_name: odh-new-module
+  repo_url: https://github.com/red-hat-data-services/odh-dashboard
+  repo_branch: rhoai-3.5-ea.2
+  context_path: ./
+  dockerfile_path: Dockerfile.konflux.new-module
+  architectures:
+    - x86_64
+    - arm64
+    - ppc64le
+    - s390x
+  target_rhoai_version: 3.5-ea-2
+  release_category: "Generally Available"
+  long_description: >-
+    The New Module provides ... (auto-suggested from README).
+  short_description: New Module
+  is_operator: false
+  # operator_manifest_src_path and operator_manifest_dest_path are
+  # omitted when is_operator is false (most components).
+```
+
+> **Operator components**: If the component IS an operator (e.g. `dashboard-operator`),
+> answer Q8 with "yes". The skill will then ask two additional questions:
+> - Q9a: Manifest source path (e.g. `./manifests`)
+> - Q9b: Manifest destination path (e.g. `odh-dashboard-operator`)
+
+## Q&A Flow Reference
 
 The skill asks questions sequentially. Each product context has different required fields.
 
@@ -83,9 +187,9 @@ The skill asks questions sequentially. Each product context has different requir
 | Q4 | GitHub repo URL? | `repo_url` | Regex: `^https://github\.com/.+/.+$`, must return HTTP 200 |
 | Q6 | Docker build context path? | `context_path` | Non-empty, default `./` |
 | Q7 | Dockerfile path? | `dockerfile_path` | Non-empty |
-| Q8 | Is this an operator? (yes/no) | `is_operator` | Boolean |
-| Q9a | Manifest source path? (if operator) | `operator_manifest_src_path` | Non-empty |
-| Q9b | Manifest dest path? (if operator) | `operator_manifest_dest_path` | Non-empty |
+| Q8 | Is this an operator? (yes/no) | `is_operator` | Boolean — almost always `no` for dashboard components |
+| Q9a | Manifest source path? (if operator) | `operator_manifest_src_path` | Non-empty — only asked when Q8=yes |
+| Q9b | Manifest dest path? (if operator) | `operator_manifest_dest_path` | Non-empty — only asked when Q8=yes |
 
 ### ODH-Only Fields
 
@@ -106,6 +210,17 @@ The skill asks questions sequentially. Each product context has different requir
 | Q4.5b | Short description? | `short_description` | Non-empty, auto-suggested from long_description |
 | Q5 | Branch (auto-derived) | `repo_branch` | NOT asked — derived from version |
 | Q7 | Dockerfile path? | `dockerfile_path` | Basename must start with `Dockerfile.konflux` |
+
+### Key Differences Between Runs
+
+| Aspect | ODH Run | RHOAI Run |
+|--------|---------|-----------|
+| Template cloned | `RHOAIENG-35683` | `RHOAIENG-17225` |
+| Repo | `opendatahub-io/odh-dashboard` | `red-hat-data-services/odh-dashboard` |
+| Branch | `main` (user-specified) | Auto-derived from version (e.g. `rhoai-3.5-ea.2`) |
+| Dockerfile naming | Free-form (e.g. `./packages/<name>/Dockerfile.workspace`) | Must start with `Dockerfile.konflux` |
+| Digest pinning | Not required | All `FROM` images must use `@sha256:` |
+| Extra fields | `build_type` | `architectures`, `target_rhoai_version`, `release_category`, descriptions |
 
 ### RHOAI Branch Auto-Derivation
 
@@ -138,6 +253,8 @@ RHOAI Dockerfiles must pin all `FROM` instructions with `@sha256:` digests:
 uv run --script scripts/check_dockerfile_digests.py \
   --dockerfile-url "<raw-github-url>"
 ```
+
+The skill constructs the raw URL automatically from `repo_url`, `repo_branch`, `context_path`, and `dockerfile_path`. The Dockerfile must already exist on the target branch before the RHOAI run — push it first (see Phase 4 in SKILL.md).
 
 If the downstream branch doesn't exist yet (HTTP 404), verify digests locally:
 ```bash
@@ -194,10 +311,13 @@ DevOps automation tracks progress via Jira labels. These are added automatically
 | Issue | Resolution |
 |-------|------------|
 | DevOps skill not found | `/plugin install aiops-skills@opendatahub-skills:0.1.0` |
-| `JIRA_USER_EMAIL`/`JIRA_API_TOKEN` not set | Use MCP fallback (generate YAML + mcp-atlassian tools) |
+| `JIRA_USER_EMAIL`/`JIRA_API_TOKEN` not set | Export in each Bash call (shell state doesn't persist) or use MCP fallback |
+| Jira scripts fail silently | Credentials must be exported in the same Bash invocation as the script |
+| `check_prerequisites.sh` not found | Scripts are at the plugin root `~/.claude/plugins/cache/opendatahub-skills/aiops-skills/0.1.0/scripts/`, not in the skill subdirectory |
 | GitLab CI didn't process YAML | Check GitLab CI pipeline status; may need manual trigger |
 | PRs not appearing | Wait up to 4 hours; check GitLab CI logs for errors |
-| Dockerfile digest check HTTP 404 | Branch doesn't exist yet; verify digests locally |
+| Dockerfile digest check HTTP 404 | Branch or file doesn't exist yet; push the Dockerfile first, then re-run |
 | Build fails after merge | Check Dockerfile path, service account permissions, Quay access |
 | Image not pushed to Quay | Verify robot account has push permissions; check Konflux logs |
 | Schema validation fails | Check conditional required fields per product context |
+| GitHub MCP tools fail on downstream repo | MCP token may lack access to `red-hat-data-services`; use git CLI directly |

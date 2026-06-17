@@ -6,7 +6,7 @@ argument-hint: "<component-name> [--skip-odh] [--skip-downstream] [--skip-jira]"
 
 # Konflux Onboarding
 
-Onboard a component to Konflux CI/CD pipelines for both ODH (upstream) and RHOAI (downstream). This skill handles Dockerfiles, Tekton PipelineRun YAML, DevOps coordination, manifest overlays, and Jira updates.
+Onboard a component to Konflux CI/CD pipelines for both ODH (upstream) and RHOAI (downstream). This skill handles Dockerfiles, Tekton PipelineRun YAML, DevOps coordination, manifest overlays, OpenShift CI, operator integration, and Jira updates.
 
 Companion to `/module-onboarding` which handles Dashboard-side package scaffolding. This skill covers the CI/CD pipeline side.
 
@@ -15,63 +15,196 @@ Companion to `/module-onboarding` which handles Dashboard-side package scaffoldi
 Parse from `$ARGUMENTS`:
 - `--skip-odh` — skip Phases 1-2 (ODH upstream Dockerfile and Tekton pipelines)
 - `--skip-downstream` — skip Phases 3-4 (RHOAI DevOps request and downstream Dockerfile)
-- `--skip-jira` — skip Phase 7 (Jira updates)
+- `--skip-jira` — skip Phase 8 (Jira updates)
 
-## Phase 0: Parse and Classify
+## Phase 0: Upfront Q&A
 
-**Goal**: Determine component type and detect existing state.
+Collect all inputs before any CI/CD work begins. Ask each question in sequence, validating and auto-detecting as you go.
 
-1. Extract the component name from `$ARGUMENTS` (first positional argument). If missing, ask the user.
+### Q1: Component Name
 
-2. Classify the component:
-   - **Type A — Modular-arch package**: `packages/<name>/` exists. These are Node.js + optional Go BFF packages that use `Dockerfile.workspace` and deploy as Module Federation remotes.
-   - **Type B — Standalone Go component**: `<name>/` exists at repo root with a `go.mod`. These are Go services/operators with their own Dockerfile.
+Extract from `$ARGUMENTS` (first positional argument). If missing, ask:
 
-   Validate the component name first, then use quoted path checks:
+> What is the component name? (kebab-case, e.g., `my-module` or `dashboard-operator`)
 
-   ```bash
-   # Validate component name (lowercase alphanumeric + hyphens only)
-   if ! echo "$COMPONENT_NAME" | grep -qE '^[a-z0-9]+(-[a-z0-9]+)*$'; then
-     echo "Invalid component name"; exit 1
-   fi
+**Validate**: Must match `^[a-z0-9]+(-[a-z0-9]+)*$`.
 
-   if [ -d "packages/${COMPONENT_NAME}" ]; then
-     TYPE="A"
-   elif [ -d "${COMPONENT_NAME}" ] && [ -f "${COMPONENT_NAME}/go.mod" ]; then
-     TYPE="B"
-   else
-     # Ask user to clarify
-   fi
+**Auto-classify** immediately after validation:
+
+```bash
+if [ -d "packages/${COMPONENT_NAME}" ]; then
+  TYPE="A"   # Modular-arch package
+elif [ -d "${COMPONENT_NAME}" ] && [ -f "${COMPONENT_NAME}/go.mod" ]; then
+  TYPE="B"   # Standalone Go component
+else
+  # Ask user to clarify or confirm the component doesn't exist yet
+fi
+```
+
+Report the classification to the user:
+```text
+Component: <name>
+Type: A (modular-arch package) / B (standalone Go component)
+```
+
+### Q2: Konflux Component Name
+
+Suggest a default based on type:
+- **Type A** → `odh-mod-arch-<name>` (e.g., `odh-mod-arch-gen-ai`)
+- **Type B** → `odh-<name>` (e.g., `odh-dashboard-operator`)
+
+> Suggested Konflux component name: **<suggested>**
+> Accept? (yes / enter a different name)
+
+**Validate**: Must match `^odh-[a-z0-9]+(-[a-z0-9]+)*$`.
+
+### Q3: Already Onboarded?
+
+Auto-detect existing state:
+
+```bash
+# ODH Dockerfile
+# Type A:
+[ -f "packages/${COMPONENT_NAME}/Dockerfile.workspace" ] && echo "ODH Dockerfile: exists"
+# Type B:
+[ -f "${COMPONENT_NAME}/Dockerfile" ] && echo "ODH Dockerfile: exists"
+
+# Tekton pipelines
+find .tekton -maxdepth 1 -name "*${COMPONENT_NAME}*push*.yaml" -print -quit 2>/dev/null
+find .tekton -maxdepth 1 -name "*${COMPONENT_NAME}*pull-request*.yaml" -print -quit 2>/dev/null
+```
+
+Report state:
+```text
+Existing state:
+  ODH Dockerfile:      ✅ exists / ❌ missing
+  Tekton push pipeline: ✅ exists / ❌ missing
+  Tekton PR pipeline:   ✅ exists / ❌ missing
+```
+
+> Do you want to skip already-existing items? (yes / no)
+
+If yes, set internal skip flags for those phases.
+
+### Q4: Is this an operator/controller?
+
+Infer from component type:
+- **Type B** with `go.mod` referencing `sigs.k8s.io/controller-runtime` → suggest `yes`
+- Otherwise → suggest `no`
+
+> Is this component an operator or controller? (yes / no) [suggested: <inferred>]
+
+### Q5: Konflux Onboarding Epic
+
+> Do you have an existing Konflux onboarding epic (cloned from RHOAIENG-37060)?
+> 1. **Yes** — I have an epic key (e.g., RHOAIENG-71234)
+> 2. **No** — Clone the template for me
+
+**If yes**: Ask for the epic key. Fetch subtask keys via MCP:
+
+```
+jira_search: jql = '"Epic Link" = <EPIC_KEY> ORDER BY key ASC'
+```
+
+Store the subtask mapping by ordinal position:
+- Subtask 1 (+1): Upstream Module Scaffolding
+- Subtask 2 (+2): Quay Repository + Konflux Component
+- Subtask 3 (+3): Dockerfiles
+- Subtask 4 (+4): Tekton Pipelines + CI Integration
+- Subtask 5 (+5): OpenShift CI
+- Subtask 6 (+6): Manifest Overlays
+- Subtask 7 (+7): Operator Integration
+- Subtask 8 (+8): Downstream Repo + Renovate
+
+**If no**: Clone RHOAIENG-37060 via MCP:
+
+1. Use `jira_create_issue` to create a new Epic with the same structure, updating the summary to include the component name:
    ```
-
-3. Detect existing state:
-   ```bash
-   # Check for existing ODH Dockerfile
-   # Type A:
-   [ -f "packages/${COMPONENT_NAME}/Dockerfile.workspace" ] && echo "exists"
-   # Type B:
-   [ -f "${COMPONENT_NAME}/Dockerfile" ] && echo "exists"
-
-   # Check for existing Tekton pipelines
-   find .tekton -maxdepth 1 -name "*${COMPONENT_NAME}*push*.yaml" -print -quit 2>/dev/null
-   find .tekton -maxdepth 1 -name "*${COMPONENT_NAME}*pull-request*.yaml" -print -quit 2>/dev/null
+   summary: "Konflux onboarding: <component-name>"
    ```
+2. Create the 8 subtasks linked to the new epic using `customfield_12311140` (Epic Link).
+3. Store the epic key and subtask keys for progress tracking.
 
-4. Report classification and state to user:
+### Q6: Target RHOAI Version
 
-   ```text
-   Component: <name>
-   Type: A (modular-arch package) / B (standalone Go component)
-   ODH Dockerfile: ✅ exists / ❌ missing
-   Tekton push pipeline: ✅ exists / ❌ missing
-   Tekton PR pipeline: ✅ exists / ❌ missing
-   ```
+> What is the target RHOAI version? (e.g., `3.5`, `3.5-ea-2`)
+
+**Validate**: Must match `^\d+\.\d+(?:\.0)?(?:-ea[-.]?\d+)?$`.
+
+**Normalize** to canonical form:
+- `3.5`, `3.5.0` → `3.5`
+- `3.5-ea2`, `3.5-ea-2`, `3.5-ea.2` → `3.5-ea-2`
+
+**Auto-derive** `repo_branch`:
+- No EA suffix (e.g., `3.5`): `rhoai-3.5`
+- EA suffix (e.g., `3.5-ea-2`): `rhoai-3.5-ea.2`
+
+### Q7: CPU Architectures
+
+> Which CPU architectures should this component build for?
+> Default: [x86_64, arm64, ppc64le, s390x]
+> Press Enter to accept, or enter a comma-separated list.
+
+**Validate**: Each must be in `{x86_64, arm64, ppc64le, s390x}`.
+
+### Q8: Release Category
+
+> What is the release category?
+> 1. **Generally Available** (GA) — default
+> 2. **Tech Preview** (TP)
+> 3. **Dev Preview / Beta** (DP)
+
+Map to stored value: `"Generally Available"`, `"Tech Preview"`, or `"Beta"`.
+
+### Q9: Automate OpenShift CI?
+
+> Would you like to automate the OpenShift CI configuration?
+> This will fork `openshift/release`, generate the CI config, and create a PR.
+> Requires: `gh` CLI authenticated with your GitHub account.
+> (yes / no) [default: no]
+
+If yes, verify `gh` CLI is available:
+```bash
+gh auth status 2>&1
+```
+
+If `gh` is not authenticated, inform the user and fall back to instructions-only.
+
+### Confirmation
+
+Display a summary:
+
+```text
+Konflux onboarding summary:
+
+  Component:           <name>
+  Type:                A (modular-arch package) / B (standalone Go)
+  Konflux name:        <odh-name>
+  Is operator:         yes / no
+  Tracking epic:       RHOAIENG-XXXXX (or: will be created)
+  Target RHOAI:        <version>
+  Repo branch:         <derived-branch>
+  Architectures:       <list>
+  Release category:    <category>
+  Automate OpenShift CI: yes / no
+
+  Existing state:
+    ODH Dockerfile:        ✅ / ❌
+    Tekton push pipeline:  ✅ / ❌
+    Tekton PR pipeline:    ✅ / ❌
+
+Proceed? (yes / no / edit)
+```
+
+- `yes` → continue to Phase 1
+- `no` → abort
+- `edit` → ask which field to change, update it, re-display summary
 
 ## Phase 1: ODH Upstream Dockerfile
 
 **Goal**: Ensure the component has an upstream Dockerfile for ODH Konflux builds.
 
-Skip if: `--skip-odh` flag, or Dockerfile already exists.
+Skip if: `--skip-odh` flag, or Dockerfile already exists (detected in Q3).
 
 ### Type A
 
@@ -95,11 +228,19 @@ See [references/dockerfile-templates.md](references/dockerfile-templates.md) § 
 
 **Verify**: The Dockerfile builds from repo root context (not from the component subdirectory).
 
+### Jira Progress Update
+
+If a tracking epic is linked, post a comment to subtask +3 (Dockerfiles):
+
+```
+jira_add_comment(issue_key="<SUBTASK_3_KEY>", body="ODH upstream Dockerfile <created/verified>: <path>")
+```
+
 ## Phase 2: ODH Upstream Tekton Pipelines
 
 **Goal**: Ensure `.tekton/` has push and pull-request pipelines for this component.
 
-Skip if: `--skip-odh` flag, or both pipeline files already exist.
+Skip if: `--skip-odh` flag, or both pipeline files already exist (detected in Q3).
 
 ### Type A
 
@@ -129,6 +270,14 @@ Use `.tekton/dashboard-operator-push.yaml` as reference. Apply substitutions:
 
 **Important**: The service account must be provisioned by DevOps before the pipeline can run. Remind the user that Phase 3 (DevOps onboarding) handles this.
 
+### Jira Progress Update
+
+If a tracking epic is linked, post a comment to subtask +4 (Tekton/CI):
+
+```
+jira_add_comment(issue_key="<SUBTASK_4_KEY>", body="Tekton pipelines <created/verified>: <push-path>, <pr-path>")
+```
+
 ## Phase 3: DevOps Onboarding Request
 
 **Goal**: Generate `component_onboarding_details.yaml` files, validate them, and attach to a Jira ticket for DevOps automation.
@@ -150,77 +299,73 @@ If those env vars are not set, you can do the equivalent work manually:
 
 Scripts live at: `~/.claude/plugins/cache/opendatahub-skills/aiops-skills/0.1.0/`
 
-### Step 3a: Collect Information (ODH run)
+### Step 3a: Generate ODH YAML
 
-Ask the user for these values (with defaults where possible):
+Use values collected in Phase 0 Q&A. Most ODH fields have defaults:
 
-| Field | Q&A Question | Validation | Default |
-|-------|-------------|------------|---------|
-| `product_context` | Which product? | `ODH` or `RHOAI` | — |
-| `build_type` | CI or Release build? (ODH only) | `CI` or `Release` | — |
-| `component_name` | Component name? | Must match `^odh-[a-z0-9]+(-[a-z0-9]+)*$` | `odh-<name>` |
-| `repo_url` | GitHub repo URL? | Must match `^https://github\.com/.+/.+$`, must return HTTP 200 | `https://github.com/opendatahub-io/odh-dashboard` |
-| `repo_branch` | Branch to build? (ODH only) | Non-empty | `main` |
-| `context_path` | Docker build context path? | Non-empty | `./` |
-| `dockerfile_path` | Dockerfile path relative to context? | Non-empty | Type A: `packages/<name>/Dockerfile.workspace`, Type B: `<name>/Dockerfile` |
-| `is_operator` | Is this an operator/controller? | `true` or `false` | — |
-| `operator_manifest_src_path` | Manifest source path? (if operator) | Non-empty | — |
-| `operator_manifest_dest_path` | Manifest dest path? (if operator) | Non-empty | `odh-<name>` |
-
-### Step 3b: Collect Information (RHOAI run)
-
-RHOAI requires additional fields beyond ODH:
-
-| Field | Q&A Question | Validation | Notes |
-|-------|-------------|------------|-------|
-| `target_rhoai_version` | Target RHOAI version? | Regex: `^\d+\.\d+(?:\.0)?(?:-ea[-.]?\d+)?$` | Canonical form: `X.Y` or `X.Y-ea-N` |
-| `architectures` | CPU architectures? | Subset of `[x86_64, arm64, ppc64le, s390x]` | Default: `[x86_64, arm64]` |
-| `release_category` | Release category? | `Generally Available`, `Tech Preview`, or `Beta` | — |
-| `long_description` | Component description (1-2 sentences)? | Non-empty | Auto-suggest from repo README |
-| `short_description` | Short description (noun phrase)? | Non-empty | Auto-suggest from long_description |
-| `repo_url` | GitHub repo URL? | — | `https://github.com/red-hat-data-services/odh-dashboard` |
-| `repo_branch` | **Auto-derived** from version | — | `rhoai-X.Y` or `rhoai-X.Y-ea.N` |
-| `dockerfile_path` | Dockerfile path? | Basename must start with `Dockerfile.konflux` | `Dockerfile.konflux.<name>` |
-
-**Branch derivation** (do NOT ask user):
-- No EA suffix (e.g., `3.5`): `repo_branch = rhoai-3.5`
-- EA suffix (e.g., `3.5-ea-2`): `repo_branch = rhoai-3.5-ea.2`
-
-### Step 3c: Generate and Validate YAML
-
-For each product context (ODH, then RHOAI):
+| Field | Value |
+|-------|-------|
+| `product_context` | `ODH` |
+| `build_type` | `CI` |
+| `component_name` | Konflux name from Q2 |
+| `repo_url` | `https://github.com/opendatahub-io/odh-dashboard` |
+| `repo_branch` | `main` |
+| `context_path` | `./` |
+| `dockerfile_path` | Type A: `packages/<name>/Dockerfile.workspace`, Type B: `<name>/Dockerfile` |
+| `is_operator` | From Q4 |
 
 ```bash
 cd ~/.claude/plugins/cache/opendatahub-skills/aiops-skills/0.1.0
-WORKDIR=$(mktemp -d)
-YAML_PATH="${WORKDIR}/component_onboarding_details.yaml"
-
-# Generate
 uv run --script scripts/generate_onboarding_yaml.py \
-  --output "$YAML_PATH" \
-  --product-context "<ODH|RHOAI>" \
-  --component-name "<name>" \
-  --repo-url "<url>" \
-  --repo-branch "<branch>" \
-  --context-path "<path>" \
+  --output "$WORKDIR/component_onboarding_details.yaml" \
+  --product-context "ODH" \
+  --component-name "<konflux-name>" \
+  --repo-url "https://github.com/opendatahub-io/odh-dashboard" \
+  --repo-branch "main" \
+  --context-path "./" \
   --dockerfile-path "<path>" \
-  [--build-type "<CI|Release>"]              # ODH only
-  [--target-rhoai-version "<version>"]       # RHOAI only
-  [--architectures "<arch1,arch2,...>"]       # RHOAI only
-  [--release-category "<category>"]          # RHOAI only
-  [--long-description "<desc>"]              # RHOAI only
-  [--short-description "<desc>"]             # RHOAI only
-  [--is-operator]                            # if operator
-  [--operator-manifest-src-path "<path>"]    # if operator
-  [--operator-manifest-dest-path "<path>"]   # if operator
+  --build-type "CI" \
+  [--is-operator --operator-manifest-src-path "..." --operator-manifest-dest-path "..."]
+```
 
-# Validate against schema
+Validate against schema:
+```bash
 uv run --script scripts/validate_yaml_schema.py \
-  "$YAML_PATH" \
+  "$WORKDIR/component_onboarding_details.yaml" \
   schemas/component_onboarding_details.schema.json
 ```
 
-### Step 3d: Dockerfile Digest Check (RHOAI only)
+### Step 3b: Generate RHOAI YAML
+
+| Field | Value |
+|-------|-------|
+| `product_context` | `RHOAI` |
+| `component_name` | Konflux name from Q2 |
+| `repo_url` | `https://github.com/red-hat-data-services/odh-dashboard` |
+| `repo_branch` | Auto-derived in Q6 |
+| `target_rhoai_version` | From Q6 |
+| `architectures` | From Q7 |
+| `release_category` | From Q8 |
+| `dockerfile_path` | `Dockerfile.konflux.<name>` |
+
+```bash
+uv run --script scripts/generate_onboarding_yaml.py \
+  --output "$WORKDIR/component_onboarding_details_rhoai.yaml" \
+  --product-context "RHOAI" \
+  --component-name "<konflux-name>" \
+  --repo-url "https://github.com/red-hat-data-services/odh-dashboard" \
+  --repo-branch "<derived-branch>" \
+  --context-path "./" \
+  --dockerfile-path "Dockerfile.konflux.<name>" \
+  --target-rhoai-version "<version>" \
+  --architectures "<arch1,arch2,...>" \
+  --release-category "<category>" \
+  --long-description "<desc>" \
+  --short-description "<desc>" \
+  [--is-operator --operator-manifest-src-path "..." --operator-manifest-dest-path "..."]
+```
+
+### Step 3c: Dockerfile Digest Check (RHOAI only)
 
 Skip for ODH. For RHOAI, verify all `FROM` instructions use `@sha256:` digests:
 
@@ -231,9 +376,9 @@ uv run --script scripts/check_dockerfile_digests.py \
 
 If the downstream branch doesn't exist yet (HTTP 404), verify digests locally against the Dockerfile content from Phase 4 or an existing PR.
 
-### Step 3e: Attach to Jira
+### Step 3d: Attach to Jira
 
-Ask user for the Jira issue key and parent feature ID.
+Ask user for the Jira issue key and parent feature ID (if not already known).
 
 Using mcp-atlassian MCP tools (if `JIRA_USER_EMAIL`/`JIRA_API_TOKEN` not set):
 1. `jira_update_issue` — attach the YAML file and add `yaml-attached` label
@@ -242,13 +387,20 @@ Using mcp-atlassian MCP tools (if `JIRA_USER_EMAIL`/`JIRA_API_TOKEN` not set):
 
 Name files distinctly: `component_onboarding_details.yaml` (ODH) and `component_onboarding_details_rhoai.yaml` (RHOAI).
 
-### Step 3f: Post-Attachment Flow
+### Step 3e: Post-Attachment Flow
 
 After attaching:
 1. **DevOps GitLab CI** picks up YAML attachments every ~2 hours
 2. Automated PRs are raised for Konflux component registration, release pipelines, Quay repos
 3. PRs require human review and merge
 4. This phase covers: Quay repo creation, Konflux component registration, release pipeline config, Renovate/automerge setup
+
+### Jira Progress Update
+
+If a tracking epic is linked, post comments to:
+- Subtask +2 (Quay/Konflux): "DevOps onboarding YAML submitted for <ODH/RHOAI>. Waiting for GitLab CI processing (~2-4 hours)."
+- Subtask +4 (Tekton/CI): "DevOps CI configuration submitted via onboarding YAML."
+- Subtask +8 (Downstream): "Downstream onboarding YAML submitted. DevOps will configure Renovate/automerge."
 
 ## Phase 4: RHOAI Downstream Dockerfile
 
@@ -304,7 +456,7 @@ The downstream Dockerfile **must** be committed to the downstream repo (e.g. `re
    echo "Downstream remote: $DOWNSTREAM_REMOTE"
    ```
 
-2. **Determine the target branch.** Use the `repo_branch` value from Phase 3 (e.g. `rhoai-3.5-ea.2`). Fetch and verify it exists:
+2. **Determine the target branch.** Use the `repo_branch` value from Phase 0 Q6 (e.g. `rhoai-3.5-ea.2`). Fetch and verify it exists:
 
    ```bash
    git fetch "$DOWNSTREAM_REMOTE" "$TARGET_BRANCH"
@@ -313,12 +465,8 @@ The downstream Dockerfile **must** be committed to the downstream repo (e.g. `re
 3. **Create a feature branch, add the Dockerfile, and push:**
 
    ```bash
-   # Create branch from the downstream target
    git checkout -b "<jira-key>-dockerfile-konflux" "$DOWNSTREAM_REMOTE/$TARGET_BRANCH"
-
    # Write Dockerfile.konflux.<name> at repo root
-   # (use the content generated above)
-
    git add "Dockerfile.konflux.<name>"
    git commit -m "<JIRA-KEY>: Add Dockerfile.konflux.<name> for RHOAI Konflux builds"
    git push "$DOWNSTREAM_REMOTE" "<jira-key>-dockerfile-konflux"
@@ -340,6 +488,20 @@ The downstream Dockerfile **must** be committed to the downstream repo (e.g. `re
 
 **Do NOT** write the Dockerfile to the upstream repo or create a PR against `opendatahub-io/odh-dashboard` — the downstream Dockerfile only exists in the downstream repo.
 
+### Jira Progress Update
+
+If a tracking epic is linked, post a comment to subtask +3 (Dockerfiles):
+
+```
+jira_add_comment(issue_key="<SUBTASK_3_KEY>", body="RHOAI downstream Dockerfile created: Dockerfile.konflux.<name>. PR: <pr-url>")
+```
+
+Also update subtask +8 (Downstream):
+
+```
+jira_add_comment(issue_key="<SUBTASK_8_KEY>", body="Downstream Dockerfile.konflux.<name> PR opened: <pr-url>")
+```
+
 ## Phase 5: Manifest Overlay (Type A only)
 
 **Goal**: Scaffold deployment manifests for a modular-arch package.
@@ -354,40 +516,252 @@ For Type A packages, check if `manifests/modular-architecture/modules/<name>/` e
 
 Reference existing module overlays in `manifests/modular-architecture/modules/` for the pattern.
 
-## Phase 6: OpenShift CI (instructions only)
+### Jira Progress Update
 
-**Goal**: Provide instructions for `openshift/release` repo configuration.
+If a tracking epic is linked, post a comment to subtask +6 (Manifests):
 
-This cannot be automated — it requires changes in a separate repository (`openshift/release`).
+```
+jira_add_comment(issue_key="<SUBTASK_6_KEY>", body="Manifest overlay <created/verified/N/A (Type B)>: manifests/modular-architecture/modules/<name>/")
+```
+
+## Phase 6: OpenShift CI
+
+**Goal**: Configure OpenShift CI for the component in `openshift/release`.
 
 **Prerequisite**: The component's Quay repository must have the `opendatahub+openshift_ci` robot account with **push** permission. Request this via `#rhoai-devtestops-request` Slack channel if not already configured.
 
-Provide the user with:
-1. The config snippet needed for `ci-operator/config/opendatahub-io/odh-dashboard/`
-2. Reference to existing PRs for similar components
-3. The PR process for `openshift/release`
+### If Automated (Q9 = yes)
+
+Requires `gh` CLI authenticated with a GitHub account that can fork `openshift/release`.
+
+#### Step 1: Fork and clone
+
+```bash
+gh repo fork openshift/release --clone=false 2>/dev/null || true
+GH_USER=$(gh api user --jq '.login')
+
+WORK_DIR="/tmp/openshift-release-$(date +%s)"
+gh repo clone "${GH_USER}/openshift-release" "$WORK_DIR" -- --depth=1
+cd "$WORK_DIR"
+git remote add upstream https://github.com/openshift/release.git
+git fetch upstream master --depth=1
+git checkout -b "add-${COMPONENT_NAME}-ci" upstream/master
+```
+
+#### Step 2: Read existing config
+
+Read the existing CI config at:
+```
+ci-operator/config/opendatahub-io/odh-dashboard/opendatahub-io-odh-dashboard-main.yaml
+```
+
+#### Step 3: Add new entries
+
+Insert the new component's entries following the existing pattern. Use the component type to determine the Dockerfile path and image name:
+
+**Type A entries:**
+```yaml
+# In images.items — add after the last existing entry:
+- context_dir: .
+  dockerfile_path: ./packages/<name>/Dockerfile.workspace
+  to: odh-mod-arch-<name>-image
+
+# In tests — add PR mirror:
+- as: odh-mod-arch-<name>-pr-image-mirror
+  steps:
+    dependencies:
+      SOURCE_IMAGE_REF: odh-mod-arch-<name>-image
+    env:
+      IMAGE_REPO: odh-mod-arch-<name>
+    workflow: opendatahub-io-ci-image-mirror
+
+# In tests — add postsubmit mirror:
+- as: odh-mod-arch-<name>-image-mirror
+  postsubmit: true
+  steps:
+    dependencies:
+      SOURCE_IMAGE_REF: odh-mod-arch-<name>-image
+    env:
+      IMAGE_REPO: odh-mod-arch-<name>
+      RELEASE_VERSION: main
+    workflow: opendatahub-io-ci-image-mirror
+```
+
+**Type B entries:**
+```yaml
+# In images.items:
+- context_dir: .
+  dockerfile_path: ./<name>/Dockerfile
+  to: <name>-image
+
+# In tests — PR mirror:
+- as: <name>-pr-image-mirror
+  steps:
+    dependencies:
+      SOURCE_IMAGE_REF: <name>-image
+    env:
+      IMAGE_REPO: <name>
+    workflow: opendatahub-io-ci-image-mirror
+
+# In tests — postsubmit mirror:
+- as: <name>-image-mirror
+  postsubmit: true
+  steps:
+    dependencies:
+      SOURCE_IMAGE_REF: <name>-image
+    env:
+      IMAGE_REPO: <name>
+      RELEASE_VERSION: main
+    workflow: opendatahub-io-ci-image-mirror
+```
+
+#### Step 4: Commit and push
+
+```bash
+git add ci-operator/config/opendatahub-io/odh-dashboard/
+git commit -m "Add CI config for <konflux-name> in odh-dashboard"
+git push origin "add-${COMPONENT_NAME}-ci"
+```
+
+#### Step 5: Create PR
+
+```bash
+gh pr create \
+  --repo openshift/release \
+  --base master \
+  --title "Add CI config for <konflux-name> in odh-dashboard" \
+  --body "Adds image build and mirror configuration for the <name> component in opendatahub-io/odh-dashboard.
+
+This adds:
+- Image build definition (Dockerfile + context)
+- PR image mirror test
+- Postsubmit image mirror test
+
+The Quay repository opendatahub+openshift_ci robot account must have push permission."
+```
+
+#### Step 6: Clean up
+
+```bash
+rm -rf "$WORK_DIR"
+```
+
+Report the PR URL to the user.
+
+### If Manual (Q9 = no)
+
+Provide the user with instructions:
 
 ```text
 To add OpenShift CI for this component:
 1. Ensure Quay repo has opendatahub+openshift_ci robot account with push permission
-2. Create a config file in openshift/release:
-   ci-operator/config/opendatahub-io/odh-dashboard/<name>.yaml
-3. Reference existing configs in the same directory for the pattern
-4. Submit a PR to openshift/release
+2. Fork openshift/release and edit:
+   ci-operator/config/opendatahub-io/odh-dashboard/opendatahub-io-odh-dashboard-main.yaml
+3. Add image build entry, PR mirror test, and postsubmit mirror test
+4. Reference existing entries in the same file for the pattern
+5. Submit a PR to openshift/release against the master branch
 ```
 
-## Phase 7: Jira Updates
+### Jira Progress Update
+
+If a tracking epic is linked, post a comment to subtask +5 (OpenShift CI):
+
+```
+jira_add_comment(issue_key="<SUBTASK_5_KEY>", body="OpenShift CI: <PR created: <url> / instructions provided to user>")
+```
+
+## Phase 7: Operator Integration
+
+**Goal**: Provide instructions and checklist for operator/controller integration.
+
+This phase provides a structured checklist based on the requirements from RHOAIENG-31290. It applies to all components but is especially relevant for operators (Q4 = yes).
+
+### Operator Integration Checklist
+
+Present the following checklist to the user. For dashboard components that need operator integration, map against these requirements:
+
+| Requirement | Dashboard Coverage | Action Required |
+|-------------|-------------------|-----------------|
+| QE repos for component | Covered — existing QE repos include dashboard testing | None |
+| Prometheus monitoring | Covered — dashboard supports metrics endpoints | None |
+| must-gather support | Covered — existing must-gather includes dashboard data | None |
+| product-definitions entry | **Action Required** — add component to product-definitions repo | Open PR to product-definitions |
+| Snyk scans | Covered — repo already scanned | None |
+| Integration with RHOAI/ODH operator | **Required** — add image reference to operator | See PR steps below |
+| AIPCC Integration | **Action Required** — add to AIPCC repo if applicable | Coordinate with AIPCC team |
+| FIPS compliance | Covered — Dockerfiles use `strictfipsruntime` build tags | Verify in downstream Dockerfile |
+
+### Operator PR Steps
+
+To add the component image to the RHOAI/ODH operator:
+
+1. **Add image to `imagesMap`** in `dashboard_support.go` (around line 50):
+   ```go
+   "<name>Image": "<name>-image",
+   ```
+
+2. **Configure parameter replacement** in `dashboard.go` (around line 42):
+   ```go
+   {
+     InManifest: "<name>-image",
+     Replace:    "<name>Image",
+   },
+   ```
+
+3. **Reference PR**: [opendatahub-operator#3050](https://github.com/opendatahub-io/opendatahub-operator/pull/3050) for an example of this integration.
+
+> **Note**: This step will change when the new dashboard-operator module controller takes over component lifecycle management. The controller-based approach will replace manual operator image registration with declarative module manifests.
+
+### Jira Progress Update
+
+If a tracking epic is linked, post a comment to subtask +7 (Operator Integration):
+
+```
+jira_add_comment(issue_key="<SUBTASK_7_KEY>", body="Operator integration checklist provided. Key actions: product-definitions PR, operator image registration, AIPCC coordination. See RHOAIENG-31290 requirements mapping.")
+```
+
+## Phase 8: Jira Updates
 
 **Goal**: Update tracking Jira issues with onboarding progress.
 
-Skip if: `--skip-jira` flag.
+Skip if: `--skip-jira` flag or no tracking epic linked.
 
-If a Jira issue key was provided or is known from context, add a comment documenting:
-- What was completed (files created, phases executed)
-- What remains (pending DevOps automation, manual steps)
-- Links to any PRs created
+### Summary Comment on Epic
 
-## Phase 8: Verification Report
+Post a comprehensive summary comment on the tracking epic:
+
+```markdown
+## Konflux Onboarding Progress: <name>
+
+### Component Details
+- **Type**: A/B
+- **Konflux name**: <odh-name>
+- **Is operator**: yes/no
+
+### Phase Status
+| Phase | Status | Details |
+|-------|--------|---------|
+| ODH Dockerfile | ✅/⏭️ | <path or "skipped"> |
+| Tekton Pipelines | ✅/⏭️ | <paths or "skipped"> |
+| DevOps Request (ODH) | ✅/⏭️ | YAML attached to <jira-key> |
+| DevOps Request (RHOAI) | ✅/⏭️ | YAML attached to <jira-key> |
+| RHOAI Dockerfile | ✅/⏭️ | <path or "skipped"> |
+| Manifest Overlay | ✅/⏭️/N/A | <path or "N/A for Type B"> |
+| OpenShift CI | ✅/📋 | <PR url or "instructions provided"> |
+| Operator Integration | 📋 | Checklist provided |
+
+### Remaining Manual Steps
+1. Review and merge DevOps-generated PRs (monitor Jira labels)
+2. Review and merge Dockerfile.konflux PR in downstream repo
+3. Complete operator integration PR
+4. Verify first build succeeds end-to-end
+```
+
+### Individual Subtask Comments
+
+If per-phase comments were not already posted (due to `--skip-jira` being removed after phases ran), post catch-up comments to each subtask with a summary of what was done.
+
+## Phase 9: Verification Report
 
 **Goal**: Summary of all work done and remaining steps.
 
@@ -399,15 +773,18 @@ Print a final report:
 ### Component Classification
 - Type: A/B
 - Component: <name>
+- Konflux name: <odh-name>
 
 ### Completed
 - [ ] ODH Dockerfile: <path> (created/already existed/skipped)
 - [ ] Tekton push pipeline: <path> (created/already existed/skipped)
 - [ ] Tekton PR pipeline: <path> (created/already existed/skipped)
-- [ ] DevOps onboarding: requested/skipped
+- [ ] DevOps onboarding (ODH): requested/skipped
+- [ ] DevOps onboarding (RHOAI): requested/skipped
 - [ ] RHOAI Dockerfile: content generated/skipped
 - [ ] Manifest overlay: created/already existed/skipped/N/A
-- [ ] OpenShift CI: instructions provided/skipped
+- [ ] OpenShift CI: PR created/instructions provided/skipped
+- [ ] Operator integration: checklist provided
 - [ ] Jira updated: yes/skipped
 
 ### Files Created/Modified
@@ -418,7 +795,7 @@ Print a final report:
 2. Wait for DevOps GitLab CI to process onboarding request (~2-4 hours)
 3. Review and merge DevOps-generated PRs (check Jira labels for progression)
 4. Review and merge Dockerfile.konflux.<name> PR in the downstream repo
-5. Submit OpenShift CI config PR to openshift/release
-6. Coordinate operator integration with Platform team (RHOAIENG-37067) — update operator component references, OLM bundle, and test integration
+5. Submit/review OpenShift CI config PR to openshift/release
+6. Complete operator integration — add image to operator, open product-definitions PR
 7. Verify first build succeeds end-to-end (both ODH and RHOAI)
 ```
