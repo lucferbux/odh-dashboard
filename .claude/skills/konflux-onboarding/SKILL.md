@@ -528,7 +528,7 @@ jira_add_comment(issue_key="<SUBTASK_6_KEY>", body="Manifest overlay <created/ve
 
 **Goal**: Configure OpenShift CI for the component in `openshift/release`.
 
-**Prerequisite**: The component's Quay repository must have the `opendatahub+openshift_ci` robot account with **push** permission. Request this via `#rhoai-devtestops-request` Slack channel if not already configured.
+**Quay permissions**: All newly created repos under `quay.io/opendatahub` automatically have the `opendatahub+openshift_ci` robot account with **push** permission (org-level config). No manual request needed for new repos.
 
 ### If Automated (Q9 = yes)
 
@@ -637,7 +637,7 @@ This adds:
 - PR image mirror test
 - Postsubmit image mirror test
 
-The Quay repository opendatahub+openshift_ci robot account must have push permission."
+The Quay repository should already have the opendatahub+openshift_ci robot account (auto-added to new repos in the opendatahub org)."
 ```
 
 #### Step 6: Clean up
@@ -654,13 +654,29 @@ Provide the user with instructions:
 
 ```text
 To add OpenShift CI for this component:
-1. Ensure Quay repo has opendatahub+openshift_ci robot account with push permission
+1. Verify the Quay repo exists at quay.io/opendatahub/<image-name>
+   (the opendatahub+openshift_ci robot account is auto-added to new repos)
 2. Fork openshift/release and edit:
    ci-operator/config/opendatahub-io/odh-dashboard/opendatahub-io-odh-dashboard-main.yaml
 3. Add image build entry, PR mirror test, and postsubmit mirror test
 4. Reference existing entries in the same file for the pattern
 5. Submit a PR to openshift/release against the master branch
 ```
+
+### Troubleshooting
+
+**Image push fails after OpenShift CI PR merges:**
+The most common cause is a missing `opendatahub+openshift_ci` robot account on the Quay repo. This can happen if:
+- The Quay repo was created **before** the org-level auto-grant was configured (mid-June 2026)
+- The Quay repo was created manually outside the `quay.io/opendatahub` org
+- The DevOps automation hasn't finished creating the repo yet
+
+**Fix**: Go to `https://quay.io/repository/opendatahub/<image-name>?tab=settings`, click "Robot Accounts", and add `opendatahub+openshift_ci` with **Write** permission. If you don't have admin access to the Quay repo, request it in the `#rhoai-devtestops-request` Slack channel.
+
+**OpenShift CI config PR fails `ci-operator` validation:**
+- Ensure the `dockerfile_path` in the config matches the actual file path in the repo
+- Ensure the `to:` image name is unique across all entries
+- Run `make ci-operator-config` locally in the `openshift/release` clone to validate before pushing
 
 ### Jira Progress Update
 
