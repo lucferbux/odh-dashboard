@@ -195,3 +195,86 @@ With onboarding reduced from a week to hours, teams can spin up new modules at t
 ```
 
 Each skill guides you through the process interactively. No prior onboarding experience required.
+
+## References
+
+### Skill Development PRs (opendatahub-io/odh-dashboard)
+
+| PR | Status | Description |
+|----|--------|-------------|
+| [#6761](https://github.com/opendatahub-io/odh-dashboard/pull/6761) | Merged | Add agent skills — initial Claude Code skill framework |
+| [#6770](https://github.com/opendatahub-io/odh-dashboard/pull/6770) | Merged | Check for module federation port conflict — port validation tooling |
+| [#7885](https://github.com/opendatahub-io/odh-dashboard/pull/7885) | Merged | Convert module onboarding rule into a skill (`/module-onboarding`) |
+| [#8073](https://github.com/opendatahub-io/odh-dashboard/pull/8073) | Merged | Add Konflux onboarding Claude Code skill (`/konflux-onboarding`) |
+| [#8184](https://github.com/opendatahub-io/odh-dashboard/pull/8184) | Open | Enhance onboarding skills with upfront Q&A and automation |
+
+### Real-World Onboarding PRs
+
+These PRs were produced (or informed) by the onboarding skills during actual module onboardings:
+
+**Upstream (opendatahub-io/odh-dashboard)**
+
+| PR | Status | Description |
+|----|--------|-------------|
+| [#7610](https://github.com/opendatahub-io/odh-dashboard/pull/7610) | Merged | Add agent-ops mod-arch module — first module onboarded using `/module-onboarding` |
+| [#7881](https://github.com/opendatahub-io/odh-dashboard/pull/7881) | Merged | Remove agent-ops from federation-configmap until container is deployed |
+| [#7800](https://github.com/opendatahub-io/odh-dashboard/pull/7800) | Open | Add agent-ops BFF to mod-arch manifests |
+| [#8093](https://github.com/opendatahub-io/odh-dashboard/pull/8093) | Open | Add Helm bootstrap chart for dashboard module controller |
+| [#8133](https://github.com/opendatahub-io/odh-dashboard/pull/8133) | Open | Dashboard module controller implementation |
+| [#8201](https://github.com/opendatahub-io/odh-dashboard/pull/8201) | Open | Add early-gate CI pipelines |
+| [#7742](https://github.com/opendatahub-io/odh-dashboard/pull/7742) | Merged | Add AI harness for dashboard-operator |
+
+**Downstream (red-hat-data-services/odh-dashboard)**
+
+| PR | Status | Description |
+|----|--------|-------------|
+| [#895](https://github.com/red-hat-data-services/odh-dashboard/pull/895) | Merged | Create Dockerfile.konflux for mod-arch component |
+| [#1278](https://github.com/red-hat-data-services/odh-dashboard/pull/1278) | Merged | Add maas as a Dockerfile.konflux |
+| [#1479](https://github.com/red-hat-data-services/odh-dashboard/pull/1479) | Merged | Add MLflow UI as a Dockerfile.konflux |
+| [#1484](https://github.com/red-hat-data-services/odh-dashboard/pull/1484) | Merged | Add Dockerfile.konflux for automl and autorag |
+| [#1974](https://github.com/red-hat-data-services/odh-dashboard/pull/1974) | Merged | Upgrade Konflux Dockerfiles from nodejs-20 to nodejs-22 |
+| [#2061](https://github.com/red-hat-data-services/odh-dashboard/pull/2061) | Open | Add Dockerfile.konflux.dashboard-operator |
+
+**OpenShift CI (openshift/release)**
+
+| PR | Status | Description |
+|----|--------|-------------|
+| [#68914](https://github.com/openshift/release/pull/68914) | Merged | Add new module for modular architecture model registry |
+
+### Jira Issues
+
+**Epic and Subtask Templates**
+
+| Issue | Summary |
+|-------|---------|
+| [RHOAIENG-37060](https://redhat.atlassian.net/browse/RHOAIENG-37060) | Modular Architecture - Deployment — template epic with 8 subtasks |
+| [RHOAIENG-37061](https://redhat.atlassian.net/browse/RHOAIENG-37061) | Onboard module to Dashboard Repo (subtask +1) |
+| [RHOAIENG-37062](https://redhat.atlassian.net/browse/RHOAIENG-37062) | Create Konflux Onboarding Jira Tickets (subtask +2) |
+| [RHOAIENG-37063](https://redhat.atlassian.net/browse/RHOAIENG-37063) | Create Dockerfiles & Tekton Pipelines (subtask +3) |
+| [RHOAIENG-37064](https://redhat.atlassian.net/browse/RHOAIENG-37064) | Track & Verify ODH Konflux Onboarding (subtask +4) |
+| [RHOAIENG-37065](https://redhat.atlassian.net/browse/RHOAIENG-37065) | Set up module for OpenShift CI builds (subtask +5) |
+| [RHOAIENG-37066](https://redhat.atlassian.net/browse/RHOAIENG-37066) | Onboard Module in Manifest Overlays (subtask +6) |
+| [RHOAIENG-37067](https://redhat.atlassian.net/browse/RHOAIENG-37067) | Onboard Module in Operator (subtask +7) |
+| [RHOAIENG-37068](https://redhat.atlassian.net/browse/RHOAIENG-37068) | Track & Verify RHOAI Konflux Onboarding (subtask +8) |
+
+**Skill Development**
+
+| Issue | Status | Summary |
+|-------|--------|---------|
+| [RHOAIENG-66095](https://redhat.atlassian.net/browse/RHOAIENG-66095) | Review | Create Konflux onboarding skill for the Dashboard |
+
+**DevOps Onboarding Templates**
+
+| Issue | Summary |
+|-------|---------|
+| [RHOAIENG-35683](https://redhat.atlassian.net/browse/RHOAIENG-35683) | [Template] ODH Konflux CI Build Onboarding — cloned by `/create-component-onboarding-jira` |
+| [RHOAIENG-17225](https://redhat.atlassian.net/browse/RHOAIENG-17225) | [Template] RHOAI Konflux Onboarding — cloned by `/create-component-onboarding-jira` |
+
+**Operator Integration**
+
+| Issue | Status | Summary |
+|-------|--------|---------|
+| [RHOAIENG-59936](https://redhat.atlassian.net/browse/RHOAIENG-59936) | Review | Integrate Dashboard Module Controller with ODH Operator |
+| [RHOAIENG-58839](https://redhat.atlassian.net/browse/RHOAIENG-58839) | New | Onboard module in Operator (checklist mapped by `/konflux-onboarding` Phase 7) |
+| [RHOAIENG-31290](https://redhat.atlassian.net/browse/RHOAIENG-31290) | New | [Template] Tech Preview - ODH and RHOAI Integrations |
+| [RHOAIENG-65724](https://redhat.atlassian.net/browse/RHOAIENG-65724) | Closed | Konflux CI build onboarding for dashboard-operator image |
